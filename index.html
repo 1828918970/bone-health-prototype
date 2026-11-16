@@ -1,0 +1,1483 @@
+<!DOCTYPE html>
+<html lang="en-AU">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F6EFE6">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<title>Bone Health · Practice</title>
+<!-- bone-health-prototype 整合 v12 · 2026-11-16 · v12: own mobile now ends in 742 (was 156, same as the unknown sender's number); log wording no longer says onboarding. v11: Activity 5: Part 1 laid out like a Facebook group on a phone; Part 2 is an iPhone-style flow (new password, two-step verification, lock-screen texts with a real reply box) -->
+<style>
+:root{
+  --scale:1;
+  --bg:#F6EFE6; --surface:#FFFFFF; --ink:#2B211C; --muted:#66564D;
+  --line:#DDCDBE;          /* static containers only */
+  --ctl:#8C7768;           /* borders of things you can tap: ≥3:1 */
+  --accent:#B04F27; --accent-dark:#933F1C; --accent-soft:#FCEBDF;
+  --ok-bg:#E5F0E2; --ok-ink:#285C33; --ok-line:#A9C8A3;
+  --warn-bg:#FBE5DA; --warn-ink:#8E3415; --warn-line:#E2A88C;
+  --task-bg:#EFE6DB; --task-line:#CDBBAA; --doc-h:#F3E4D6;
+  --ro-line:#E6D9CB; --ro-shadow:0 1px 3px rgba(70,45,30,.07);   /* read-only cards: lighter than any control */
+  --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+[hidden]{display:none!important}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.readclone{position:fixed;left:-10000px;top:0;pointer-events:none}
+html{font-size:calc(16px * var(--scale));-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{font-family:var(--font);color:var(--ink);background:#E4D8CA;min-height:100vh}
+button,input,textarea,select{font:inherit;color:inherit}
+button{cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+:focus-visible{outline:3px solid #1E4E9C;outline-offset:2px}
+[tabindex="-1"]:focus{outline:none}
+b,strong{font-weight:800}
+
+/* ---------- app shell: full screen on a phone, centred preview on a computer ---------- */
+#app{position:relative;max-width:480px;margin:0 auto;height:100vh;height:100dvh;display:flex;flex-direction:column;background:var(--bg);overflow:hidden}
+@media (min-width:640px){body{padding:24px 0}#app{height:min(880px,calc(100vh - 48px));border-radius:28px;box-shadow:0 20px 50px rgba(60,40,30,.2)}}
+
+/* top bar stays the same size whatever the text size, so it never overflows */
+#top{flex:none;padding-top:env(safe-area-inset-top);background:var(--bg);font-size:16px}
+.tb{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 12px 4px}
+.tools{display:flex;gap:8px}
+.tbtn{display:inline-flex;align-items:center;gap:6px;min-height:44px;min-width:44px;padding:0 12px;border-radius:12px;border:1px solid var(--ctl);background:var(--surface);font-size:16px;font-weight:700;white-space:nowrap}
+.tbtn svg{width:22px;height:22px;flex:none}
+.tbtn.back{border-color:transparent;background:transparent;padding:0 10px 0 2px}
+.tbtn.on{background:var(--accent-soft);border-color:var(--accent)}
+.aa{font-weight:800;font-size:17px;letter-spacing:-.02em}
+.tbspace{width:44px;height:44px}
+.prog{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:4px 20px 10px;font-size:15px;font-weight:700;color:var(--muted);user-select:none;-webkit-user-select:none}
+.segs{display:flex;gap:4px}
+.segs i{width:22px;height:6px;border-radius:3px;background:var(--line)}
+.segs i.done{background:var(--ctl)}
+.segs i.on{background:var(--accent)}
+
+#content{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:12px 20px 28px}
+#foot{flex:none;padding:12px 20px calc(14px + env(safe-area-inset-bottom));border-top:1px solid var(--line);background:var(--bg);display:flex;flex-direction:column;gap:6px}
+#foot:empty{display:none}
+
+/* ---------- type ---------- */
+h1{font-size:2rem;line-height:1.2;text-align:center;margin-bottom:.6rem}
+h2{font-size:1.6rem;line-height:1.25;margin-bottom:.6rem}
+.eyebrow{font-size:1rem;font-weight:700;color:var(--accent-dark);margin-bottom:.4rem}
+.lead{font-size:1.15rem;line-height:1.55;margin-bottom:1rem}
+.meta{font-size:1rem;line-height:1.5;color:var(--muted)}
+.center{text-align:center}
+.secthead{font-size:1.15rem;font-weight:800;margin:1.3rem 0 .6rem}
+h2.q{font-size:1.3rem;line-height:1.35;margin:1rem 0}
+
+/* ---------- buttons: three kinds only ---------- */
+.btn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:3.5rem;padding:.6rem 1rem;border-radius:16px;border:2px solid transparent;font-size:1.2rem;font-weight:800;line-height:1.25;text-align:center}
+.btn svg{width:1.4rem;height:1.4rem;flex:none}
+.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+.primary:active{background:var(--accent-dark)}
+.secondary{background:var(--surface);color:var(--accent-dark);border-color:var(--accent-dark)}
+.secondary:active{background:var(--accent-soft)}
+.btn.sm{min-height:3rem;font-size:1.05rem}
+.link{display:inline-flex;align-items:center;justify-content:center;background:none;border:none;color:var(--accent-dark);text-decoration:underline;text-underline-offset:3px;font-size:1.05rem;font-weight:700;min-height:48px;padding:0 6px}
+.stack{display:flex;flex-direction:column;gap:10px;margin:1rem 0}
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.skiprow{margin-top:1.75rem;text-align:center}
+.skiprow .link{color:var(--muted);font-weight:600}
+.notice{background:var(--warn-bg);border:1.5px solid var(--warn-line);color:var(--warn-ink);border-radius:12px;padding:10px 12px;font-size:1rem;font-weight:700;line-height:1.4}
+.notice:empty{display:none}
+
+/* ---------- choices ---------- */
+.opts{display:flex;flex-direction:column;gap:12px}
+.opt{display:flex;align-items:center;gap:14px;width:100%;text-align:left;background:var(--surface);border:2px solid var(--ctl);border-radius:16px;padding:14px;min-height:3.5rem;font-size:1.1rem;line-height:1.4;font-weight:600}
+.opt .badge{flex:none;width:2.25rem;height:2.25rem;border-radius:50%;border:2px solid var(--ctl);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.95rem;background:var(--surface)}
+.opt .badge.radio::after{content:"";width:.95rem;height:.95rem;border-radius:50%}
+.opt .otext{flex:1}
+.opt small{display:block;font-weight:500;color:var(--muted);font-size:.95rem;margin-top:3px;line-height:1.4}
+.opt .tick{flex:none;width:1.6rem;height:1.6rem;color:var(--accent);visibility:hidden}
+.opt .tick svg{width:100%;height:100%}
+.opt.sel{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent);background:var(--accent-soft)}
+.opt.sel .badge{background:var(--accent);border-color:var(--accent);color:#fff}
+.opt.sel .badge.radio::after{background:#fff}
+.opt.sel .tick{visibility:visible}
+.opt.size .aa-prev{flex:none;width:2.4em;text-align:center;font-weight:800}
+.opt.size .otext{font-weight:700}
+
+/* whole card is the button */
+.entries{display:flex;flex-direction:column;gap:12px;margin-bottom:1rem}
+.entry{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;text-align:left;background:var(--surface);border:2px solid var(--ctl);border-radius:16px;padding:14px 16px;min-height:3.75rem}
+.entry .et{display:block;font-size:1.15rem;font-weight:800;line-height:1.3}
+.entry .es{display:block;font-size:.95rem;color:var(--muted);margin-top:3px}
+.entry>svg{width:1.5rem;height:1.5rem;color:var(--accent-dark);flex:none}
+.entry:active{background:var(--accent-soft)}
+/* v6 · A2 Part 1 menu: icon + label tiles, like a phone home screen (labels always shown) */
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:1rem}
+.tile{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;min-height:7.5rem;padding:14px 8px;background:var(--surface);border:2px solid var(--ctl);border-radius:16px;text-align:center;font-size:1.1rem;font-weight:800;line-height:1.25}
+.tile .ticon{flex:none;width:3rem;height:3rem;border-radius:50%;background:var(--doc-h);color:var(--accent-dark);display:flex;align-items:center;justify-content:center}
+.tile .ticon svg{width:1.7rem;height:1.7rem}
+.tile:active{background:var(--accent-soft)}
+
+/* ---------- documents (report, appointment, source, share preview) ---------- */
+.doc{background:var(--surface);border:1px solid var(--ro-line);box-shadow:var(--ro-shadow);border-radius:18px;overflow:hidden;margin-bottom:1rem}
+.doc-h{display:flex;justify-content:space-between;align-items:center;gap:8px;background:var(--doc-h);padding:12px 16px;font-weight:800;font-size:1.05rem}
+.tag{flex:none;font-size:.85rem;font-weight:800;color:var(--accent-dark);background:var(--surface);border:1.5px solid var(--accent-dark);border-radius:999px;padding:2px 10px}
+.row{padding:12px 16px;border-top:1px solid var(--line)}
+.k{font-size:.95rem;color:var(--muted);font-weight:600}
+.v{font-size:1.2rem;font-weight:800;margin-top:2px;line-height:1.35}
+.v.big{font-size:1.7rem}
+.v.txt{font-size:1.1rem;font-weight:600;line-height:1.5}
+.doc.compact .row{display:grid;grid-template-columns:minmax(5.5rem,32%) 1fr;gap:10px;align-items:baseline;padding:10px 14px}
+.doc.compact .v{font-size:1.05rem;margin:0;font-weight:700;line-height:1.4}
+
+/* real-format DXA report (Activity 1): looks like a radiology letter, read-only */
+.dxa{padding:14px 16px 16px;font-size:1rem;line-height:1.5}
+.dxa .clinic{border-bottom:2px solid #1F3D6B;padding-bottom:8px;margin-bottom:10px}
+.dxa .clinic b{display:block;color:#1F3D6B;font-size:1.1rem}
+.dxa .clinic small{display:block;font-size:.85rem;color:var(--muted);line-height:1.4}
+.dxa h3{font-size:1.05rem;color:#1F3D6B;margin:0 0 8px;letter-spacing:.01em}
+.dxa .pinfo{display:grid;grid-template-columns:auto 1fr;gap:2px 12px;border:1px solid var(--ro-line);border-radius:10px;padding:8px 10px;margin-bottom:10px;font-size:.95rem}
+.dxa .pinfo dt{font-weight:800}
+.dxa .pinfo dd{margin:0}
+.dxa p{margin:0 0 8px}
+.dxa .sec{font-weight:800;font-size:.85rem;letter-spacing:.05em;text-transform:uppercase;color:#1F3D6B;border-bottom:1px solid var(--ro-line);padding-bottom:2px;margin:12px 0 6px}
+.dxa table{width:100%;border-collapse:collapse;font-size:.88rem;margin-bottom:4px}
+.dxa th{text-align:left;font-weight:800;background:#EEF1F6;padding:6px 5px;vertical-align:bottom;line-height:1.25}
+.dxa td{padding:6px 5px;border-bottom:1px solid var(--ro-line);vertical-align:top}
+.dxa th.n,.dxa td.n{text-align:right;white-space:nowrap}
+
+.dxa .res3 th.n,.dxa .res3 td.n{width:33.3%;text-align:center}
+.dxa .res3 tr.rg th{background:none;padding:8px 5px 0;font-weight:800}
+.dxa .res3 tr.rg+tr td{padding-top:2px}
+.dxa .note{font-size:.9rem;color:var(--muted)}
+.dxa ol{margin:0 0 4px 1.3em;padding:0}
+.dxa ol li{margin:2px 0}
+.dxa .sig{margin-top:12px}
+.dxa .sig i{font-family:Georgia,"Times New Roman",serif;color:#1F3D6B;font-size:1.15rem}
+.dxa .key{margin-top:12px;border-top:1px solid var(--ro-line);padding-top:8px;font-size:.88rem;color:var(--muted);line-height:1.45}
+.dxa .key p{margin:0 0 4px}
+
+/* ---------- messages ---------- */
+.fb{border-radius:16px;padding:14px 16px;font-size:1.05rem;line-height:1.5;margin-bottom:1rem;border:1.5px solid}
+.fb>b{display:flex;align-items:center;gap:8px;font-size:1.15rem;margin-bottom:4px}
+.fb svg{width:1.3rem;height:1.3rem;flex:none}
+.fb.ok{background:var(--ok-bg);border-color:var(--ok-line)}
+.fb.ok>b{color:var(--ok-ink)}
+.fb.try{background:#FFF6EC;border-color:#E8CDB0}
+.fb.warn{background:var(--warn-bg);border-color:var(--warn-line)}
+.fb.warn>b{color:var(--warn-ink)}
+.fb.info{background:var(--task-bg);border-color:var(--task-line)}
+.res{display:flex;flex-direction:column;gap:8px;margin-bottom:1rem}
+.res>div{display:flex;justify-content:space-between;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--ro-line);border-radius:14px;padding:12px 14px;font-weight:700;font-size:1.05rem}
+.res .y{display:inline-flex;align-items:center;gap:6px;color:var(--ok-ink);white-space:nowrap}
+.res .y svg{width:1.1rem;height:1.1rem}
+.res .n{color:var(--warn-ink);white-space:nowrap}
+.res .m{color:var(--muted);white-space:nowrap}
+
+/* task reminder (neutral, not green) */
+.task{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:var(--task-bg);border:1.5px solid var(--task-line);border-radius:14px;padding:10px 14px;font-size:1rem;line-height:1.4;margin-bottom:1rem;min-height:48px}
+.task>svg{width:1.3rem;height:1.3rem;flex:none;color:var(--muted)}
+.task .tt{flex:1}
+.task .show{flex:none;font-weight:800;color:var(--accent-dark);text-decoration:underline}
+.taskbox{background:var(--task-bg);border:1.5px solid var(--task-line);border-radius:16px;padding:14px 16px;font-size:1.1rem;line-height:1.5;margin-bottom:.5rem}
+.taskbox .meta{margin-top:6px}
+
+/* reference bar (look at the material again): beige strip, not white, so it never looks like an answer option */
+.ref{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:var(--task-bg);border:1px solid var(--task-line);border-radius:14px;padding:10px 14px;min-height:48px;font-size:1.05rem;font-weight:800;color:var(--accent-dark);margin-bottom:.25rem}
+.ref span{flex:1}
+.ref svg{width:1.3rem;height:1.3rem;flex:none}
+.ref:active{background:var(--accent-soft)}
+/* question number: a clear page-turn cue */
+.qnum{display:inline-block;background:var(--accent-soft);color:var(--accent-dark);font-weight:800;font-size:1rem;border-radius:999px;padding:4px 12px;margin-bottom:.75rem}
+/* comprehension check inside a review page, set apart from the preview above it */
+.check{background:var(--task-bg);border:1px solid var(--task-line);border-radius:16px;padding:12px 14px 14px;margin-top:.5rem}
+.check-h{font-size:.95rem;font-weight:800;color:var(--muted);text-transform:none}
+.check h2.q{margin:.4rem 0 .9rem}
+/* quiet follow-up actions on done / review pages, stacked */
+.after{display:flex;flex-direction:column;align-items:center;gap:2px;margin-top:1rem}
+/* neutral done page */
+.donehead{width:64px;height:64px;border-radius:50%;background:var(--doc-h);color:var(--accent-dark);display:flex;align-items:center;justify-content:center;margin:1.5rem auto 1rem}
+.donehead svg{width:32px;height:32px}
+.keys{margin:.25rem 0 0 1.2rem;display:flex;flex-direction:column;gap:6px}
+.hero.sm{width:80px;height:80px;margin:4px auto 10px}
+.hero.sm svg{width:46px;height:46px}
+/* gentle fade when a new screen appears, so a page turn is noticeable */
+#content.enter{animation:enter .18s ease-out}
+@keyframes enter{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){#content.enter{animation:none}}
+
+/* content blocks */
+.hero{width:112px;height:112px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#FBE3CF,#F1C6A6);display:flex;align-items:center;justify-content:center;margin:12px auto 18px}
+.steps{list-style:none;display:flex;flex-direction:column;gap:10px;margin:0 0 1rem}
+.steps li{display:flex;gap:12px;align-items:center;font-size:1.1rem;line-height:1.4;font-weight:600}
+.num{flex:none;width:2.2rem;height:2.2rem;border-radius:50%;background:var(--doc-h);color:var(--accent-dark);display:flex;align-items:center;justify-content:center;font-weight:800}
+.article{background:var(--surface);border:1px solid var(--ro-line);box-shadow:var(--ro-shadow);border-radius:18px;padding:18px;margin-bottom:1rem}
+.article h3{font-size:1.35rem;line-height:1.3;margin-bottom:.5rem}
+.article p{font-size:1.15rem;line-height:1.6;margin-bottom:.75rem}
+.article .src{margin-top:.25rem}
+.scenario{background:var(--surface);border:1px solid var(--ro-line);border-left:6px solid var(--accent);border-radius:16px;padding:14px 16px;font-size:1.1rem;line-height:1.55;margin-bottom:.5rem}
+/* v7 · article lists and header row (falls articles in A2 and A4) */
+.article ul{margin:0 0 .75rem 1.25rem;padding:0}
+.article li{font-size:1.1rem;line-height:1.55;margin:.35rem 0}
+.arthead{display:flex;justify-content:space-between;align-items:center;gap:8px}
+/* v8 · A3 sponsored post, laid out like a feed ad: page row with a ⋯ menu, story text, photo, link bar, reactions */
+.post{background:var(--surface);border:1px solid var(--ro-line);box-shadow:var(--ro-shadow);border-radius:14px;overflow:hidden;margin-bottom:1rem}
+.post-h{display:flex;align-items:center;gap:8px;padding:8px 6px 6px 14px}
+.post-name{flex:1;min-width:0;display:flex;align-items:center;gap:10px;min-height:48px;padding:0;background:none;border:none;border-radius:10px;text-align:left}
+.post-av{flex:none;width:2.6rem;height:2.6rem;border-radius:50%;background:#2F5D50;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:1.15rem}
+.post-n{flex:1;min-width:0;line-height:1.3}
+.post-n b{display:block;font-size:1.05rem}
+.post-n span{font-size:.9rem;color:var(--muted)}
+.post-more{flex:none;width:48px;height:48px;border:none;background:none;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--muted)}
+.post-more svg{width:1.6rem;height:1.6rem}
+.post-more:active,.post-name:active{background:#F0F2F5}
+.post-t{padding:0 14px 10px;font-size:1.05rem;line-height:1.5}
+.post-t p{margin:0 0 8px}
+.post-t .fine{font-size:.85rem;color:var(--muted);line-height:1.4;margin:0}
+.post-photo{display:block;width:100%;height:auto;aspect-ratio:640/427;object-fit:cover;background:#D9D5CE}
+.post-link{display:flex;align-items:center;gap:10px;background:#F0F2F5;padding:10px 14px}
+.post-link .pl{flex:1;min-width:0;line-height:1.3}
+.post-link small{display:block;font-size:.8rem;color:var(--muted);letter-spacing:.03em}
+.post-link b{display:block;font-size:1rem}
+.post-link .pd{display:block;font-size:.9rem;color:var(--muted)}
+.post-cta{flex:none;background:#E2E5EA;border-radius:8px;padding:9px 12px;font-weight:800;font-size:.95rem;white-space:nowrap}
+.post-react{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 14px;font-size:.9rem;color:var(--muted)}
+.post-react .rx{display:inline-flex;align-items:center;gap:4px}
+.post-react .rx i{width:1.25rem;height:1.25rem;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;color:#fff}
+.post-react .rx i+i{margin-left:-8px;border:1.5px solid #fff;box-sizing:content-box}
+.post-react .rx i svg{width:.75rem;height:.75rem}
+.post-react .rx em{font-style:normal;margin-left:4px}
+.post-acts{display:flex;border-top:1px solid var(--ro-line);margin:0 14px;padding:4px 0 6px;color:var(--muted);font-weight:700;font-size:.95rem}
+.post-acts span{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;min-height:36px}
+.post-acts svg{width:1.15rem;height:1.15rem}
+/* v11 · A5 Part 1: a public group as it looks in the Facebook phone app (group header, post, comments in grey bubbles).
+   Layout and colours follow the app; no logo or wordmark. */
+.fbx{background:#fff;color:#050505;border:1px solid var(--ro-line);box-shadow:var(--ro-shadow);border-radius:14px;overflow:hidden;margin-bottom:1rem}
+.fbx-bar{display:flex;align-items:center;gap:10px;padding:8px 12px;border-bottom:1px solid #E4E6EB;color:#050505}
+.fbx-bar svg{flex:none;width:1.4rem;height:1.4rem}
+.fbx-bar .t{flex:1;min-width:0;font-weight:700;font-size:1rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fbx-cover{height:5.25rem;background:linear-gradient(135deg,#8FBCE0 0%,#B9DCCB 60%,#E9D9B8 100%);display:flex;align-items:flex-end;justify-content:flex-end;padding:8px 12px}
+.fbx-gh{padding:10px 14px 12px}
+.fbx-gh h3{font-size:1.4rem;line-height:1.25;margin-bottom:2px}
+.fbx-meta{display:flex;align-items:center;gap:6px;min-height:44px;padding:0;background:none;border:none;color:#65676B;font-size:.95rem;font-weight:600;text-align:left}
+.fbx-meta svg{flex:none;width:1rem;height:1rem}
+.fbx-meta:active{background:#F0F2F5}
+.fbx-join{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;min-height:44px;border:none;border-radius:8px;background:#0866FF;color:#fff;font-weight:700;font-size:1rem;margin-top:4px}
+.fbx-join svg{width:1.1rem;height:1.1rem}
+.fbx-sep{height:8px;background:#C9CCD1}
+.fbx-post{padding:12px 14px 4px}
+.fbx-who{display:flex;align-items:center;gap:10px}
+.fbx-av{flex:none;width:2.5rem;height:2.5rem;border-radius:50%;color:#fff;font-weight:800;font-size:.95rem;display:flex;align-items:center;justify-content:center}
+.fbx-av.sm{width:2.1rem;height:2.1rem;font-size:.85rem}
+.fbx-who b{display:block;font-size:1rem;line-height:1.25}
+.fbx-who small{display:flex;align-items:center;gap:4px;font-size:.85rem;color:#65676B}
+.fbx-who small svg{width:.85rem;height:.85rem}
+.fbx-post p{font-size:1.05rem;line-height:1.45;margin:8px 0}
+.fbx-react{display:flex;justify-content:space-between;align-items:center;padding:6px 14px;font-size:.9rem;color:#65676B}
+.fbx-react .rx{display:inline-flex;align-items:center;gap:5px}
+.fbx-react .rx i{width:1.2rem;height:1.2rem;border-radius:50%;background:#0866FF;color:#fff;display:inline-flex;align-items:center;justify-content:center}
+.fbx-react .rx i svg{width:.7rem;height:.7rem}
+.fbx-acts{display:flex;border-top:1px solid #E4E6EB;border-bottom:1px solid #E4E6EB;margin:0 14px;color:#65676B;font-weight:700;font-size:.95rem}
+.fbx-acts span{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;min-height:40px}
+.fbx-acts svg{width:1.15rem;height:1.15rem}
+.fbx-sort{padding:10px 14px 4px;font-weight:700;font-size:.95rem;display:flex;align-items:center;gap:4px}
+.fbx-sort svg{width:1rem;height:1rem}
+.fbx-c{display:flex;gap:8px;padding:6px 14px}
+.fbx-c:last-child{padding-bottom:14px}
+.fbx-cb{min-width:0}
+.fbx-bub{background:#F0F2F5;border-radius:18px;padding:8px 12px}
+.fbx-bub b{display:block;font-size:.95rem;line-height:1.3}
+.fbx-bub p{font-size:1.02rem;line-height:1.45}
+.fbx-cm{display:flex;gap:16px;padding:3px 12px 0;font-size:.85rem;font-weight:700;color:#65676B}
+/* v11 · A5 Part 2: iPhone-style screens (app settings, lock screen, Messages) */
+.ios{background:#F2F2F7;color:#000;border:1px solid var(--ro-line);box-shadow:var(--ro-shadow);border-radius:22px;overflow:hidden;margin:.75rem 0 1rem}
+.ios-nav{display:flex;align-items:center;gap:8px;padding:12px 12px 10px;background:#F9F9F9;border-bottom:1px solid #D8D8DC;font-size:1.05rem}
+.ios-nav .bk{display:flex;align-items:center;color:#007AFF;min-width:5.5rem}
+.ios-nav .bk svg{width:1.3rem;height:1.3rem}
+.ios-nav .tt{flex:1;text-align:center;font-weight:700}
+.ios-nav .sp{min-width:5.5rem}
+.ios-app{display:flex;align-items:center;gap:8px;justify-content:center;font-size:.85rem;color:#6D6D72;padding:8px 0 0}
+.ios-note{background:#FFF4E5;border:1px solid #F3D7AE;margin:12px;border-radius:12px;padding:10px 12px;font-size:1rem;line-height:1.45}
+.ios-sec{font-size:.8rem;color:#6D6D72;text-transform:uppercase;letter-spacing:.02em;padding:12px 28px 6px}
+.ios-grp{background:#fff;margin:0 12px 12px;border-radius:12px;overflow:hidden}
+.ios-row{display:flex;align-items:center;gap:12px;width:100%;min-height:3.6rem;padding:10px 14px;background:#fff;border:none;border-bottom:1px solid #E5E5EA;text-align:left;color:#000}
+.ios-row:last-child{border-bottom:none}
+.ios-row:active{background:#E5E5EA}
+.ios-row .rt{flex:1;min-width:0;line-height:1.35}
+.ios-row .rt b{display:block;font-size:1.02rem;font-weight:600}
+.ios-row .rt code{display:block;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:1rem;color:#3C3C43;margin-top:2px;word-break:break-all}
+.ios-row .ck{flex:none;width:1.5rem;height:1.5rem;color:#007AFF;visibility:hidden}
+.ios-row.sel .ck{visibility:visible}
+.ios-row.sel{background:#EAF3FF}
+.ios-foot{font-size:.9rem;color:#6D6D72;line-height:1.45;padding:0 28px 14px}
+.sw{flex:none;position:relative;width:3.2rem;height:1.95rem;border-radius:999px;background:#E9E9EA;border:none;transition:background .15s}
+.sw::after{content:"";position:absolute;top:2px;left:2px;width:calc(1.95rem - 4px);height:calc(1.95rem - 4px);border-radius:50%;background:#fff;box-shadow:0 2px 4px rgba(0,0,0,.25);transition:transform .15s}
+.sw.on{background:#34C759}
+.sw.on::after{transform:translateX(1.25rem)}
+@media (prefers-reduced-motion:reduce){.sw,.sw::after{transition:none}}
+.lock{background:linear-gradient(165deg,#22304F 0%,#5B4E78 55%,#B9806B 100%);color:#fff;border-radius:26px;padding:22px 12px 18px;margin:.75rem 0 1rem;text-align:center}
+.lock .ld{font-size:1rem;font-weight:600;opacity:.95}
+.lock .lt{font-size:4rem;font-weight:300;line-height:1.05;margin-bottom:12px}
+.notif{display:flex;gap:10px;width:100%;text-align:left;background:rgba(246,246,248,.92);color:#000;border:none;border-radius:20px;padding:10px 12px;margin-top:8px}
+.notif:active{background:#fff}
+.app-ic{flex:none;width:2.3rem;height:2.3rem;border-radius:10px;background:linear-gradient(#5BF675,#0CBD2A);color:#fff;display:flex;align-items:center;justify-content:center}
+.app-ic svg{width:1.4rem;height:1.4rem}
+.notif .nb{flex:1;min-width:0;line-height:1.35}
+.notif .nh{display:flex;justify-content:space-between;gap:8px}
+.notif .nh b{font-size:.98rem}
+.notif .nh small{flex:none;font-size:.8rem;color:#6D6D72}
+.notif .nx{font-size:.98rem;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.msgs{background:#fff;color:#000;border:1px solid var(--ro-line);box-shadow:var(--ro-shadow);border-radius:22px;overflow:hidden;margin:.75rem 0 1rem}
+.msgs-h{padding:12px 16px 6px;font-size:1.7rem;font-weight:800}
+.mrow{display:flex;gap:12px;width:100%;padding:10px 16px;background:#fff;border:none;border-top:1px solid #E5E5EA;text-align:left;color:#000}
+.mrow:active{background:#E5E5EA}
+.mrow .dot{flex:none;width:.6rem;height:.6rem;border-radius:50%;background:#007AFF;margin-top:1.1rem}
+.mrow .dot.read{background:none}
+.mav{flex:none;width:2.8rem;height:2.8rem;border-radius:50%;background:linear-gradient(#A5A9B2,#868A93);color:#fff;display:flex;align-items:center;justify-content:center}
+.mav svg{width:1.6rem;height:1.6rem}
+.mrow .mb{flex:1;min-width:0;line-height:1.35}
+.mrow .mh{display:flex;justify-content:space-between;gap:8px}
+.mrow .mh b{font-size:1.02rem}
+.mrow .mh small{flex:none;font-size:.85rem;color:#8A8A8E}
+.mrow .mx{font-size:.95rem;color:#8A8A8E;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.mempty{padding:18px 16px;color:#8A8A8E;font-size:1rem;border-top:1px solid #E5E5EA}
+.th-h{display:flex;align-items:center;padding:8px 10px;background:#F9F9F9;border-bottom:1px solid #D8D8DC}
+.th-back{flex:none;display:flex;align-items:center;min-width:44px;min-height:44px;background:none;border:none;color:#007AFF}
+.th-back svg{width:1.5rem;height:1.5rem}
+.th-who{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:.85rem;margin-right:44px}
+.th-who .mav{width:2.4rem;height:2.4rem}
+.th-body{padding:12px 12px 6px;display:flex;flex-direction:column;gap:8px;min-height:12rem}
+.th-time{text-align:center;font-size:.8rem;color:#8A8A8E;margin-bottom:2px}
+.bl{align-self:flex-start;max-width:82%;background:#E9E9EB;border-radius:18px;padding:8px 12px;font-size:1.02rem;line-height:1.4}
+.br{align-self:flex-end;max-width:82%;background:#007AFF;color:#fff;border-radius:18px;padding:8px 12px;font-size:1.02rem;line-height:1.4;white-space:pre-wrap;word-break:break-word}
+.th-dl{align-self:flex-end;font-size:.8rem;color:#8A8A8E;margin-top:-4px}
+.th-junk{text-align:center;font-size:.85rem;color:#8A8A8E;line-height:1.4;padding:6px 4px}
+.th-junk button{background:none;border:none;color:#007AFF;font-weight:600;font-size:.9rem;min-height:36px;padding:0 6px}
+.th-in{display:flex;align-items:flex-end;gap:8px;padding:8px 10px 10px;border-top:1px solid #E5E5EA}
+.th-in textarea{flex:1;min-width:0;border:1px solid #C7C7CC;border-radius:18px;padding:8px 14px;font-size:max(16px,1rem);line-height:1.35;resize:none;min-height:2.4rem;max-height:7rem;background:#fff;color:#000}
+.th-in textarea:focus{outline:none;border-color:#007AFF}
+.th-send{flex:none;width:2.4rem;height:2.4rem;border-radius:50%;border:none;background:#007AFF;color:#fff;display:flex;align-items:center;justify-content:center}
+.th-send:disabled{background:#C7C7CC}
+.th-send svg{width:1.2rem;height:1.2rem}
+.samplebar{display:flex;justify-content:flex-end;margin-top:.5rem}
+.taskbox.sm{font-size:1rem;padding:10px 14px;margin-bottom:.75rem}
+/* v8 · tester shortcuts (only when switched on in the researcher view; never shown in a real session) */
+.tst{display:flex;gap:6px;align-items:center;padding:0 12px 6px;font-size:13px;font-weight:700;color:var(--muted);overflow-x:auto}
+.tst button{flex:none;min-width:38px;height:34px;padding:0 8px;border:1.5px dashed var(--ctl);border-radius:8px;background:#fff;font-size:13px;font-weight:700}
+.tst button.cur{background:var(--accent-soft);border-color:var(--accent);border-style:solid}
+.quote{background:var(--surface);border:1px solid var(--ro-line);box-shadow:var(--ro-shadow);border-radius:16px;padding:16px;font-size:1.2rem;line-height:1.5;margin-bottom:1rem;white-space:pre-wrap;word-break:break-word}
+
+/* inputs */
+.fieldlabel{display:block;font-size:1.1rem;font-weight:800;margin:.75rem 0 .5rem}
+.field{width:100%;border:2px solid var(--ctl);border-radius:14px;background:var(--surface);padding:14px;font-size:max(16px,1.15rem);color:var(--ink)}
+.field::placeholder{color:#857369}
+.field:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(176,79,39,.2)}
+textarea.field{min-height:6rem;resize:none;line-height:1.5}
+.searchrow{display:flex;gap:8px;align-items:stretch;margin-bottom:12px}
+.searchrow .field{flex:1;min-width:0}
+/* hide the browser's own small clear button; our 56px one is logged */
+input[type=search]::-webkit-search-cancel-button,input[type=search]::-webkit-search-decoration{-webkit-appearance:none;appearance:none}
+.iconbtn{flex:none;width:56px;border-radius:14px;border:2px solid var(--ctl);background:var(--surface);display:flex;align-items:center;justify-content:center}
+.iconbtn svg{width:22px;height:22px}
+.rec{border-color:var(--warn-ink)!important;background:var(--warn-bg)!important;color:var(--warn-ink)!important}
+
+/* ---------- bottom sheet ---------- */
+#scrim{position:absolute;inset:0;background:rgba(43,33,28,.45);opacity:0;pointer-events:none;transition:opacity .2s;z-index:20}
+#scrim.open{opacity:1;pointer-events:auto}
+#sheet{position:absolute;left:0;right:0;bottom:0;max-height:88%;display:flex;flex-direction:column;background:var(--bg);border-radius:24px 24px 0 0;transform:translateY(100%);visibility:hidden;transition:transform .25s,visibility .25s;z-index:21;padding-bottom:env(safe-area-inset-bottom)}
+#sheet.open{transform:none;visibility:visible}
+.sh-head{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 12px 10px 20px;border-bottom:1px solid var(--line)}
+.sh-head h3{font-size:1.3rem;line-height:1.3}
+.xbtn{flex:none;width:48px;height:48px;border-radius:50%;border:2px solid var(--ctl);background:var(--surface);display:flex;align-items:center;justify-content:center}
+.xbtn svg{width:22px;height:22px}
+.sh-body{overflow-y:auto;padding:16px 20px 20px}
+.sh-body .btn+.btn{margin-top:10px}
+@media (prefers-reduced-motion:reduce){#sheet,#scrim{transition:none}}
+
+/* ---------- researcher view (hidden from participants; fixed px sizes) ---------- */
+#rv{position:fixed;inset:0;z-index:100;background:#FFFDF9;overflow-y:auto;font-size:14px;color:#2B211C}
+#rv[hidden]{display:none}
+.rv-in{max-width:760px;margin:0 auto;padding:16px 16px 60px}
+.rv-top{display:flex;justify-content:space-between;align-items:center;gap:10px;position:sticky;top:0;background:#FFFDF9;padding:8px 0;border-bottom:1px solid #EADBCB;z-index:1}
+.rv-top h1{font-size:20px;text-align:left;margin:0}
+#rv button{border:1.5px solid #CDBBAA;background:#fff;border-radius:10px;padding:9px 12px;font-weight:700;font-size:14px}
+#rv button.danger{border-color:#C9603B;color:#8E3415}
+.rv-small{color:#66564D;font-size:12.5px;line-height:1.45;margin:10px 0}
+.rv-box{background:#F8F1E8;border-radius:12px;padding:12px;margin:10px 0;display:grid;gap:8px}
+.rv-box label{font-weight:700;font-size:13px;color:#66564D;display:grid;gap:4px}
+.rv-box input,.rv-box select{padding:8px;border:1.5px solid #CDBBAA;border-radius:8px;background:#fff;font-size:14px}
+.rv-actions{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 4px}
+#rv h2{font-size:15px;margin:20px 0 6px;color:#933F1C}
+#rv table{width:100%;border-collapse:collapse}
+#rv td{padding:7px 4px;border-bottom:1px solid #F1E6DA;vertical-align:top}
+#rv td:last-child{text-align:right;font-weight:700}
+.crit{color:#A8431F}.okc{color:#285C33}.mut{color:#66564D;font-weight:500}
+.rv-log{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;background:#F8F1E8;border-radius:12px;padding:10px;line-height:1.6;max-height:420px;overflow-y:auto}
+.rv-log .t{color:#66564D}
+#rvfab{position:fixed;left:10px;bottom:10px;z-index:90;border:1.5px solid #CDBBAA;background:#fff;border-radius:10px;padding:6px 10px;font-size:12px;font-weight:700;opacity:.8}
+</style>
+</head>
+<body>
+<div id="app">
+  <header id="top"></header>
+  <main id="content"></main>
+  <footer id="foot"></footer>
+  <div id="scrim"></div>
+  <div id="sheet" role="dialog" aria-modal="true" aria-labelledby="shTitle"></div>
+</div>
+<div id="rv" hidden></div>
+
+<script>
+"use strict";
+/* =====================================================================
+   1. COPY (en-AU). Everything participants read lives here, so a Chinese
+      version later only needs a second copy of this object.
+   ===================================================================== */
+const C = {
+  lang:"en-AU",
+  back:"Back", textSize:"Text size", listen:"Listen", stop:"Stop", close:"Close", done:"Done",
+  act:n=>`Activity ${n} of 5`, partOf:n=>`Part ${n} of 2`, sample:"Sample",
+  next:"Next question", nextAct:"Next activity", qOf:(n,t=3)=>`Question ${n} of ${t}`,
+  pickFirst:"Please choose an answer first.",
+  allFirst:n=>`Please answer all three questions first. Question ${n} still needs an answer.`,
+  skipAct:"Skip this activity", skipPart:"Skip this part",
+  skipQ:"Skip this activity?", skipPQ:"Skip this part?",
+  skipBody:"That's completely fine. You can come back to it later.",
+  keep:"Keep going", skipYes:"Yes, skip this activity", skipOnly:p=>`Skip ${p} only`, skipWhole:"Skip the whole activity",
+  part1:"Part 1", part2:"Part 2",
+  sizes:[[1,"Standard"],[1.2,"Large"],[1.4,"Extra large"]],
+  sizeNote:"The change shows straight away. You can change it at any time.",
+  speak:"Speak", stopSpeak:"Stop, I've finished",
+  voiceNo:{t:"Voice isn't working here",b:"This phone can't turn speech into text right now. This is a technical limit, not something you did. You can type instead.",ok:"OK, I'll type"},
+  checkWords:{t:"Please check the words",b:"Is this what you said? You can change anything that isn't right."},
+  changeAns:"Change my answers",
+
+  welcome:{title:"Bone Health",sub:"Try five short activities in this app. This is not a test.",
+    noteT:"Just for practice",note:"All health details here are made up. Please don't enter real medical or contact information.",
+    tools:"Use <b>Text size</b> and <b>Listen</b> at the top at any time. You can skip any activity.",
+    start:"Start"},
+  intro:{t:"Try five short activities",lead:"They help us learn what support suits you. This is not a test.",
+    items:["Read a sample bone density report","Find an appointment and search for information","Look at a health post from social media","Use some advice at home and write a question","Read an online group and some text messages"],
+    after:"You can go back or skip any activity.",begin:"Begin"},
+
+  /* Activity 1 report: fictional, laid out like a real Australian DXA report (radiologist letter to the GP). */
+  report:{title:"Bone density report",
+    clinic:"Kestrel Bay Medical Imaging",clinicSub:"Level 2, 18 Sample Street, Sampleton NSW 2999 · Ph (02) 5550 1234",
+    heading:"Bone Mineral Densitometry Report (DXA)",
+    info:[["Patient","Mrs Margaret TAYLOR"],["DOB","14/03/1952 (74 yrs)"],["Scan date","21/10/2026"],["Referring doctor","Dr Jenny Nguyen"],["Copy to","Patient"]],
+    dear:"Dear Dr Nguyen,",
+    intro:"Thank you for referring Mrs Taylor, who attended on 21/10/2026 for bone densitometry of the AP lumbar spine and left hip. Bone mineral density was measured on a Hologic Horizon A densitometer.",
+    histT:"Clinical history",
+    hist:"Postmenopausal. Follow-up of osteopenia; previous DXA 18/10/2024. Taking calcium and vitamin D. No history of minimal trauma fracture.",
+    resT:"Results",cols:["Region","BMD (g/cm²)","T‑score","Z‑score"],
+    res:[["AP spine L1–L4","0.872","−1.6","−0.4"],["Left total hip","0.770","−1.4","−0.2"],["Left femoral neck","0.630","−1.9","−0.3"]],
+    chgT:"Change since 18/10/2024",chgCols:["Region","Change<br>in BMD"],
+    chg:[["AP spine L1–L4","−0.9%"],["Left total hip","−1.2%"],["Left femoral neck","−1.7%"]],
+    lsc:"Least significant change (LSC): spine 0.022, total hip 0.027, femoral neck 0.029 g/cm². Changes since the last study are within LSC.",
+    afrT:"Absolute fracture risk (10-year, FRAX® Australia)",
+    afr:[["Major osteoporotic fracture","11%"],["Hip fracture","2.4%"]],
+    conT:"Conclusion",
+    con:["Osteopenia (WHO criteria). Lowest T-score −1.9 at the left femoral neck.","No statistically significant change in BMD since 18/10/2024.","Z-scores are within the expected range for age.","Suggest clinical correlation and repeat BMD in 2 years."],
+    sign:["Kind regards,","A. Morgan","Dr Alex Morgan MBBS FRANZCR","Radiologist · Electronically signed 22/10/2026"],
+    key:["<b>WHO classification (T-score)</b>, for postmenopausal women and men aged 50+: Normal −1.0 or above. Osteopenia between −1.0 and −2.5. Osteoporosis −2.5 or below.",
+         "<b>T-score:</b> standard deviations from the mean BMD of young healthy adults of the same sex. <b>Z-score:</b> standard deviations from the mean BMD of people of the same age and sex."]},
+
+  a1:{t:"Read the sample report",lead:"Read the report, then answer 3 questions.",answer:"Answer the questions",
+    view:"View the report",sheetT:"Sample report",backQ:"Back to the question",submit:"Submit my answers",
+    q:{q1:{t:"Does the report say Margaret's bone density is normal?",o:{A:"Yes, it is normal.",B:"No, it is lower than normal.",C:"The report doesn't say."}},
+       q2:{t:"Compared with the last scan in 2024, what does the report say?",o:{A:"The bone density has dropped a lot.",B:"It went down a little, but the change is not significant.",C:"The bone density has improved."}},
+       q3:{t:"Margaret has three questions. Which one does this report NOT answer?",o:{A:"When should I have my next scan?",B:"Which parts of my body were scanned?",C:"Should I change my medication?"}}},
+    again:"Look at the report again",
+    doneT:"Activity done",doneB:"Thank you. Your answers are saved."},
+
+  a2:{p1:"Part 1 of 2",t1:"Find an appointment",
+    lead1:"Find the <b>12 June 2030</b> appointment and open it. Then come back to this menu.",
+    sections:"Sections in this app",
+    sec:{reports:"Reports",followup:"Follow-up",info:"Health information",meds:"Medicines",msg:"Messages",me:"My details"},
+    emptyB:"There's nothing in this section yet.",
+    /* v6: Part 2 describes what happened, not what to search for (no title words such as walkway / clear) */
+    task1:"find the <b>12 June 2030</b> appointment",task2:"find an article that helps after nearly tripping in your hallway",
+    taskLabel:"Your task:",show:"Full task",taskT:"Your task",ok:"OK",
+    taskFull1:"Find the sample appointment on <b>12 June 2030</b>. Open its details and look at them, then come back to the activity menu.",
+    taskFull2:"Last week you nearly tripped over some shoes and a bag left in your hallway. You'd like some tips so it doesn't happen again. Use the app's search to find an article that would help.",
+    reportsT:"Reports",reportEntry:["Bone density report","Scan date 21/10/2026"],
+    followT:"Follow-up appointments",
+    infoT:"Health information",
+    apptT:"Appointment details",apptCard:"Follow-up appointment",apptRows:{date:"Appointment date",time:"Time",clinic:"Clinic",addr:"Address"},
+    clinic:"Kestrel Bay Bone Health Clinic",addr:"Level 1, 18 Sample Street, Sampleton",
+    p1done:"Part 1 done",p1doneB:"You found the appointment and came back here.",p1skip:"Part 1 skipped",p1skipB:"That's fine. Let's try the next part.",
+    p2:"Part 2 of 2",t2:"Find health information",
+    lead2a:"Last week you nearly tripped over some shoes and a bag left in your hallway. You'd like some tips so it doesn't happen again.",
+    lead2b:"Use the app's search to find an article that would help.",
+    openSearch:"Search practice information",
+    searchT:"Search",searchLabel:"Search words",placeholder:"Type a few words",clear:"Clear the search words",
+    search:"Search",typeFirst:"Please type a few words first, or tap Speak.",
+    resultsEyebrow:"Search results",resultsFor:q=>`Results for “${q}”`,changeWords:"Change search words",
+    noneT:"No articles found",none:"Try different words. Short, everyday words often work well.",
+    thisOne:"This is the one",
+    doneT:"Activity done",doneLead:"Thank you for trying both parts.",
+    r1:"Part 1 · Find an appointment",r2:"Part 2 · Find information",rDone:"Done",rSkip:"Skipped",rNot:"Not finished",
+    nothingBooked:"Nothing was booked. The appointments and articles are samples.",reviewed:"Reviewed by Kestrel Bay physiotherapists · August 2026",
+    /* v7: falls articles written like real patient-information pages (one intro line + four tips each, similar length).
+       Wording is our own, drawn from common points in Australian and UK falls-prevention leaflets. Needs clinical sign-off. */
+    art:{walk:{t:"Keeping a walkway clear",b:"<p>Many falls happen in and around the home, often over things left on the floor. A clear path through each room makes a trip less likely.</p><ul><li>Keep hallways, doorways and stairs free of shoes, bags, boxes and other clutter.</li><li>Run electrical cords along the wall or behind furniture, not across walkways.</li><li>Remove loose rugs and mats, or fix them down with non-slip backing.</li><li>Get someone to help with anything that is heavy or awkward to move.</li></ul>"},
+         balance:{t:"Exercises for better balance",b:"<p>Exercises that build balance and leg strength are one of the most effective ways to lower your chance of a fall.</p><ul><li>Try simple balance activities, such as standing on one leg while holding the kitchen bench.</li><li>Tai chi and community strength-and-balance classes are good, social ways to start.</li><li>Do them regularly, and build up slowly.</li><li>Ask a physiotherapist which exercises are safe for you, especially if you have had a fall.</li></ul>"},
+         shoes:{t:"Choosing safe shoes and slippers",b:"<p>Shoes that fit well and hold your foot firmly help you stay steady on your feet.</p><ul><li>Choose a low, wide heel and a thin, firm sole with good grip.</li><li>Look for a firm back, and laces, buckles or velcro that keep the shoe on.</li><li>Avoid loose slippers, thongs, and walking around in socks.</li><li>Have your feet measured now and then, as shoe size can change with age.</li></ul>"},
+         afterfall:{t:"What to do after a fall",b:"<p>Knowing what to do can help you stay calm if you have a fall.</p><ul><li>Stay still for a moment and check whether you are hurt.</li><li>If you are not hurt, roll onto your side, get onto your hands and knees, and use a sturdy chair to help you get up slowly.</li><li>If you are hurt or can't get up, call for help. In an emergency, call Triple Zero (000).</li><li>Tell your doctor about any fall, even if you weren't hurt.</li></ul>"},
+         reports:{t:"About sample reports",b:"<p>The reports in this app are made up for practice. A report shows where a measurement was taken, the result number and a short summary.</p>"},
+         proto:{t:"Using this prototype",b:"<p>You can make text bigger with <b>Text size</b>, hear a page with <b>Listen</b>, and go back at any time.</p>"}},
+    artEyebrow:"Health information",artEyebrowFalls:"Falls prevention · Home safety"},
+
+  /* v8: fictional brand (Ossenta), written the way current feed ads for supplements are written: a first-person story
+     from a lifestyle-sounding page, with the seller only visible in the link bar and behind the ⋯ menu.
+     Pattern taken from ads running in Australia in the Meta Ad Library (Nov 2026); all wording here is our own.
+     Advertiser details sit where they are on a real platform: ⋯ → "Why am I seeing this ad?", or tap the page name. */
+  a3:{t:"Look at a health post",lead:"You see this post while scrolling on your phone. Read it, then answer 3 questions about it.",
+    page:"Healthy After 60",avatar:"H",sponsored:"Sponsored",more:"More options for this post",
+    text:["I'm Marion, 71, a retired primary school teacher from Ballarat.",
+      "Two years ago my bone density scan showed osteopenia. My doctor suggested a tablet, but I was worried about side effects and wanted something natural.",
+      "A friend from choir told me about <b>Ossenta Bone Renew</b>: calcium, magnesium, vitamin D3 and K2 in one capsule. I take two with breakfast.",
+      "Eight months on, I'm back in the garden and I haven't needed anything else. If your doctor has said “osteopenia” to you, have a look at the link below."],
+    fine:"*Based on a survey of 212 customers, 2025. Always read the label and follow the directions for use.",
+    imgAlt:"A brown bottle labelled Ossenta Bone Renew on a kitchen bench.",
+    domain:"OSSENTA.COM.AU",headline:"Stronger bones, naturally",desc:"Trusted by 10,000+ Australians* · 30% off this week",cta:"Shop now",
+    likes:"1.2K",stats:"248&nbsp;comments · 96&nbsp;shares",like:"Like",comment:"Comment",share:"Share",
+    shopT:"This is a practice post",shopB:"There's no shop in this activity, and nothing can be bought.",shopOk:"OK",
+    menuT:"Post options",why:"Why am I seeing this ad?",hide:"Hide ad",report:"Report ad",
+    inertB:"This is a practice post, so it stays on the screen.",
+    whyT:"Why you're seeing this ad",whyLead:"<b>Healthy After 60</b> wants to reach people like you.",
+    whyAud:"Who this ad is shown to",whyRows:[["Age","60 and over"],["Location","Australia"],["Interests","Health and wellness"]],
+    advT:"About this advertiser",advRows:[["Page","Healthy After 60"],["Paid for by","Ossenta Naturals Pty Ltd"]],
+    pageT:"Page transparency",pageRows:[["Page","Healthy After 60"],["Category","Health &amp; wellness website"],["Page created","14 March 2025"],
+      ["Page name history","Changed from “Ossenta Deals” in May 2025","txt"],["People who manage this Page","United States (3), Australia (1)","txt"],["Ads","This Page is currently running ads.","txt"]],
+    answer:"Answer the questions",viewPost:"View the post",sheetT:"The post",backQ:"Back to the question",backPost:"Back to the post",
+    scenario:"<b>Helen</b> is 74. Her doctor has started her on a medicine for osteoporosis. She has just seen the same post.",
+    /* v8: one question each for commercial intent (Q1), checking elsewhere (Q2) and whether it applies to a person (Q3).
+       Every option is something people really say or do; similar lengths; answer key unchanged (A, A, B). */
+    q:{q1:{t:"What is this post mainly?",o:{A:"An advert from a company that sells the product.",B:"A personal story Marion has shared with friends.",C:"Health advice from a bone health organisation."}},
+       q2:{t:"You want to find out whether this product really helps bones. What is the best way to check?",o:{A:"Ask a pharmacist, or look on an independent health website.",B:"Read more customer stories on the product's own website.",C:"See how many people have liked and shared this post."}},
+       q3:{t:"What is the most sensible thing for Helen to do?",o:{A:"Take the product as well. It's natural, so it can't hurt.",B:"Keep taking her medicine, and ask her doctor about the product.",C:"Try the product in place of her medicine for a few months."}}},
+    submit:"Submit my choices",again:"Look at the post again",
+    doneT:"Activity done",doneB:"Thank you. Your answers are saved."},
+
+  a4:{t1:"Put advice into practice",lead1:"Read this advice. Next, you'll see a situation at home.",
+    /* v7: the advice is the same article as the A2 target (C.a2.art.walk), so the two activities stay consistent */
+    source:"About this advice",
+    srcT:"About this advice",src:[["Published by","Kestrel Bay Bone Health Clinic"],["Written by","Physiotherapy team"],["Last reviewed","August 2026"]],
+    choose:"Continue",viewAdv:"View the advice",advSheet:"The advice",
+    /* v7: a concrete situation, and three options that all sound reasonable (none copies the advice word for word).
+       v8: the title and the advice no longer say "safe" / "don't push heavy items on your own". */
+    situation:"In your hallway right now: a pair of shoes, a shopping bag, and a heavy box of old books.",
+    q:"Which step follows this advice best?",
+    o:{A:"Put the shoes and bag away, and ask family to move the box.",B:"Push the heavy box to the side myself, slowly and carefully.",C:"Leave things as they are, and take more care in the hallway."},
+    add:"Save my choice",added:"Your choice is saved.",
+    t2:"Prepare a question for a health professional",
+    /* v7: a real reason to ask (the near-trip from Activity 2), so everyone has something to ask; the difference is in how clearly they write it */
+    lead2:"Last week you nearly tripped in your hallway. Next week you'll see the nurse at your GP clinic for a few minutes. Write <b>one question</b> you'd like to ask.",
+    myQ:"My question",placeholder:"Tap here to type your question",privacy:"No need to include real personal health details.",
+    check:"Check my question",typeFirst:"Please type or say your question first.",
+    reviewT:"Check your question",reviewLead:"Is this your question?",
+    edit:"Edit my question",confirm:"Confirm my question",
+    doneT:"Activity done",doneOk:"Thank you. Your choice and your question are saved."},
+
+  /* v11: Activity 5 has two parts, one per DHLI 2.0 skill that the other activities don't cover.
+     Part 1 · Protecting privacy. Adapted from the DHLI performance item on privacy (van der Vaart & Drossaert 2017; the
+     Brazilian adolescent version, Barbosa et al. 2024, item 27): judge other people's comments in a public group. Laid out
+     like a public group in the Facebook phone app, which older adults know (layout only, no logo). Q1 = who can read along,
+     asked as a consequence (can a neighbour who hasn't joined see Bev's comment?), so reading the word "Public" isn't
+     enough. Q2 = which comment protects the writer's and other people's privacy: Lorraine gives away where she lives,
+     her doctor and her treatment and invites a stranger to meet; Bev gives away a named neighbour's health and where they
+     will both be today; Gwen shares a general experience and identifies nobody.
+     Part 2 · Using security measures (strong passwords, two-step codes), as one story on an iPhone: the clinic app asks
+     for a new password (choose one of three); the app suggests two-step verification (turn it on, then: who should you
+     give the code to?); a week later two texts arrive on the lock screen, the real code and a message asking for it.
+     The person handles them as they normally would: open, reply (a real text box), Report Junk, or leave them.
+     Sending the code is recorded as a critical security error. Nothing tells them they weren't signing in; being at the
+     shops and Q2 are what they have to put together. All names, numbers and the app are made up
+     (0491 570 156 is in the range ACMA keeps for fiction). */
+  a5:{t1:"Read a group post",
+    lead1:"You're looking at a bone health group on your phone. Someone has asked a question and three people have commented. Read the post and the comments, then answer 2 questions.",
+    answer:"Answer the questions",viewThread:"View the group post",sheetT:"The group post",backQ:"Back to the question",backThread:"Back to the post",
+    fb:{name:"Bone Health Chat Australia",status:"Public group",members:"4.2K members",join:"Join group",
+      post:{who:"Pam Russell",ini:"PR",col:"#7A4E9C",time:"2d",
+        b:"Just been told I have osteopenia after my scan last week. A bit worried, to be honest. What helped you?",likes:"12",comments:"3 comments"},
+      like:"Like",comment:"Comment",share:"Share",sort:"Most relevant",reply:"Reply",
+      c:[{k:"c1",who:"Lorraine Mitchell",ini:"LM",col:"#8A5A6B",time:"1d",
+          b:"Same here, Pam! I'm in Sampleton too, on Sample Street near the library. I see Dr Patel at Kestrel Bay Clinic and I've had a bone injection every six months since March. Happy to meet for a cuppa!"},
+         {k:"c2",who:"Bev Walker",ini:"BW",col:"#5B7A3A",time:"1d",
+          b:"My neighbour Joan Parker was told the same last year. She has a bone injection now and her kidneys aren't great, so she's worried. We're both at Kestrel Bay Clinic at 3&nbsp;pm today, so I'll ask the nurse."},
+         {k:"c3",who:"Gwen Harris",ini:"GH",col:"#B26A2E",time:"20h",
+          b:"I was told the same two years ago. Walking most days and a balance class helped me feel steadier. My GP also checked my vitamin D. Everyone's different, so it's worth asking your own GP what suits you."}]},
+    aboutT:"About",aboutH:"Bone Health Chat Australia",
+    aboutRows:[["Public","Anyone can see who's in the group and what they post, including people who haven't joined.","txt"],["Visible","Anyone can find this group.","txt"],["History","Group created on 3 June 2019.","txt"]],
+    joinT:"This is a practice group",joinB:"You can't join this group. It's only for practice, and nothing here is real.",
+    p1q:{q1:{t:"Bev's neighbour Joan has not joined this group. Could Joan, or anyone else who hasn't joined, see Bev's comment?",
+             o:{A:"Yes. Anyone can see it, even without joining.",B:"Only if they ask to join the group first.",C:"No. Only group members can see it."}},
+         q2:{t:"Which comment best protects the writer's privacy and other people's privacy?",o:{A:"Lorraine's comment.",B:"Bev's comment.",C:"Gwen's comment."}}},
+    submit:"Submit my answers",allBoth:n=>`Please answer both questions first. Question ${n} still needs an answer.`,
+    p1saved:"Part 1 done. Your answers are saved.",
+    t2:"Keep your clinic app safe",
+    app:"Kestrel Bay Health",settings:"Settings",
+    pwLead:"You open the Kestrel Bay Health app. It asks you to make a new password. Choose the password that would be hardest for someone else to guess, then tap Save.",
+    pw:{title:"Password",note:"Your password is more than 2 years old. Please make a new one.",sec:"Choose a new password",
+      o:{A:{t:"Your first name and the year you were born",ex:"Margaret1952!"},B:{t:"Four words that don't go together",ex:"kettle-garden-blue-sun"},C:{t:"A word with numbers and symbols",ex:"P@ssw0rd2026!"}}},
+    save:"Save new password",pickPw:"Please choose a password first.",
+    tfaLead:"Next, the app suggests turning on two-step verification. Turn it on, then answer the question.",
+    tfa:{title:"Security",row:"Two-step verification",on:"On",off:"Off",
+      foot:"Adds an extra step when you sign in. When you sign in on a new phone or computer, we'll text a 6-digit code to your mobile ending in 742. Enter the code in the app to finish signing in.",
+      isOn:"Two-step verification is on."},
+    turnOnFirst:"Please turn on two-step verification first.",
+    tfaQ:{t:"Who should you give this code to?",o:{A:"Nobody. You type it into the app yourself.",B:"Anyone from the clinic who asks for it.",C:"A family member who helps you with the app."}},
+    lockLead:"A week later, you're at the shops. Your phone buzzes twice. Do what you would normally do with these messages. When you've finished, tap Finish.",
+    lock:{date:"Tuesday 24 November",time:"10:42",now:"now"},
+    sms:{off:{from:"KestrelBay",b:"Your Kestrel Bay Health code is 482913. It expires in 10 minutes.",time:"10:41 am"},
+         scam:{from:"+61 491 570 156",b:"Hi, this is the Kestrel Bay Health support team. We're fixing a problem with your account. Please reply with the 6-digit code we just sent, so your test results aren't deleted.",time:"10:42 am"}},
+    msgsT:"Messages",noMsgs:"No other messages.",today:"Today",
+    unknown:"This sender is not in your contact list.",reportJunk:"Report Junk",
+    junkT:"Report Junk?",junkB:"This message will be reported as junk and deleted from this phone.",junkYes:"Delete and Report Junk",junkNo:"Cancel",
+    textPh:"Text Message",send:"Send",delivered:"Delivered",
+    finish:"Finish",
+    doneT:"Activity done",doneB:"Thank you. Your answers are saved.",nextEnd:"Finish"},
+
+  end:{t:"Thank you!",b:"You've finished all five activities.",
+    keyT:"Good to remember",key:["Don't stop or change prescription medicine because of an advertisement or a report on its own. Talk to a health professional first.","Ask someone to help you move heavy things, so you don't fall or get hurt.","Never share a sign-in code sent to your phone, even if the message says it's from the clinic."],next:"Thank you for your time. The researcher will tell you what happens next.",ph:"",
+    again:"Back to the start",againQ:"Go back to the start?",againB:"You'll go back to the first screen and can try the activities again.",
+    againYes:"Yes, go to the start",stay:"Stay here"}
+};
+
+/* =====================================================================
+   2. ICONS (inline SVG, same on every phone; replaces emoji)
+   ===================================================================== */
+const svg=(p,sw=2.2)=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${p}</svg>`;
+const I={
+  back:svg('<path d="M15 18l-6-6 6-6"/>',2.6),
+  chev:svg('<path d="M9 6l6 6-6 6"/>',2.6),
+  down:svg('<path d="M6 9l6 6 6-6"/>',2.6),up:svg('<path d="M6 15l6-6 6 6"/>',2.6),
+  speaker:svg('<path d="M11 5L6 9H3v6h3l5 4V5z"/><path d="M15.5 8.5a5 5 0 010 7"/><path d="M18.5 5.5a9 9 0 010 13"/>'),
+  stop:svg('<rect x="6" y="6" width="12" height="12" rx="2"/>'),
+  mic:svg('<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0014 0M12 18v3"/>'),
+  search:svg('<circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/>'),
+  doc:svg('<path d="M14 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/>'),
+  check:svg('<path d="M5 12.5l4.5 4.5L19 7.5"/>',2.8),
+  x:svg('<path d="M6 6l12 12M18 6L6 18"/>',2.6),
+  info:svg('<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.01"/>'),
+  warn:svg('<path d="M12 3.5l9.5 16.5h-19z"/><path d="M12 10v4.5M12 17.5v.01"/>'),
+  task:svg('<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 3h6v3H9zM8.5 11h7M8.5 15h5"/>'),
+  pill:svg('<rect x="2.5" y="8.5" width="19" height="7" rx="3.5" transform="rotate(-35 12 12)"/><path d="M9.2 7.9l5.6 8.2" />',1.8),
+  pencil:svg('<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/>'),
+  /* v6 · menu tile icons: concrete, semantically close (Leung 2011) */
+  cal:svg('<rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/>'),
+  book:svg('<path d="M12 6.5C10 5 7 4.5 3.5 5v13c3.5-.5 6.5 0 8.5 1.5 2-1.5 5-2 8.5-1.5V5C17 4.5 14 5 12 6.5z"/><path d="M12 6.5v13"/>'),
+  chat:svg('<path d="M4 5h16v11H9.5L5 20v-4H4z"/>'),
+  person:svg('<circle cx="12" cy="8" r="4"/><path d="M4.5 20.5a7.5 7.5 0 0115 0"/>'),
+  bubbleI:`<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false"><path d="M12 4C7 4 3 7.1 3 11c0 2.2 1.3 4.2 3.3 5.5-.2 1.2-.8 2.4-1.8 3.3 1.9 0 3.6-.7 4.8-1.8.9.2 1.8.3 2.7.3 5 0 9-3.1 9-7s-4-7-9-7z"/></svg>`,
+  sendUp:svg('<path d="M12 19V6M6 11l6-6 6 6"/>',2.8),
+  plus:svg('<path d="M12 5v14M5 12h14"/>',2.6),
+  globe:svg('<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.7 3.8 5.7 3.8 9s-1.3 6.3-3.8 9c-2.5-2.7-3.8-5.7-3.8-9S9.5 5.7 12 3z"/>'),
+  group:svg('<circle cx="9" cy="8.5" r="3.2"/><circle cx="16.5" cy="9.5" r="2.6"/><path d="M3 19.5a6 6 0 0112 0M14.5 15.2a5 5 0 016.5 4.3"/>'),
+  /* v8 · feed post and send-to list */
+  dots:`<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>`,
+  thumb:svg('<path d="M7 11v9H4v-9z"/><path d="M7 11l4-7.5c1.4 0 2.5 1.100 2.5 2.500V10h4.300a2 2 0 012 2.300l-.900 6a2 2 0 01-2 1.700H7"/>'),
+  heart:svg('<path d="M12 20s-7.500-4.600-7.500-10A4.200 4.200 0 0112 7.300 4.200 4.200 0 0119.500 10c0 5.400-7.500 10-7.500 10z"/>'),
+  fwd:svg('<path d="M14 5l6 6-6 6v-3.500c-5 0-8 1.500-10 4.500.500-6 3.500-9.500 10-9.500z"/>'),
+  arrow:svg('<path d="M5 12h14M13 6l6 6-6 6"/>',2.6),
+  building:svg('<path d="M5 21V5l8-2v18M13 9h6v12M3 21h18M8.500 8v.01M8.500 12v.01M8.500 16v.01M16 13v.01M16 17v.01"/>'),
+  shareI:svg('<circle cx="6" cy="12" r="2.500"/><circle cx="17.500" cy="6" r="2.500"/><circle cx="17.500" cy="18" r="2.500"/><path d="M8.200 10.900l7-3.700M8.200 13.100l7 3.700"/>')
+};
+/* v8 · product photo for the A3 post: a free-licence stock photo (Unsplash) of a blank-label bottle, with the fictional label drawn on */
+const ADPHOTO="data:image/jpeg;base64,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";
+const BONE=`<svg width="62" height="62" viewBox="0 0 64 64" fill="none" aria-hidden="true"><g transform="rotate(-40 32 32)"><rect x="27" y="14" width="10" height="36" rx="4" fill="#fff" stroke="#933F1C" stroke-width="2.5"/><circle cx="27" cy="13" r="6" fill="#fff" stroke="#933F1C" stroke-width="2.5"/><circle cx="37" cy="13" r="6" fill="#fff" stroke="#933F1C" stroke-width="2.5"/><circle cx="27" cy="51" r="6" fill="#fff" stroke="#933F1C" stroke-width="2.5"/><circle cx="37" cy="51" r="6" fill="#fff" stroke="#933F1C" stroke-width="2.5"/><rect x="28.3" y="15" width="7.4" height="34" fill="#fff"/></g></svg>`;
+
+/* =====================================================================
+   3. STATE + STORAGE (kept on this phone so a reload doesn't lose data)
+   ===================================================================== */
+const KEY="bonehealth-proto-v2";
+const KEY1={a1:{q1:"B",q2:"B",q3:"C"},a3:{q1:"A",q2:"A",q3:"B"},a4:"A",a5:{p1:{q1:"A",q2:"C"},pw:"B",tfa:"A"}};
+const FIRST={1:"a1_report",2:"a2_menu",3:"a3_ad",4:"a4_card",5:"a5_forum",6:"end"};
+function fresh(){return {v:2,pid:"",startedAt:new Date().toISOString(),t0:Date.now(),screen:"welcome",hist:[],log:[],scale:1,
+  tester:false,assist:{size:0,read:0},tech:[],backs:{},nudges:{},time:{},skipped:{},
+  a1:{ans:{},first:null,submits:0,edits:0,reportViews:0,reviewViews:0,retries:0,lastResult:null,lastAns:null},
+  a2:{part:"A",taskViews:0,nav:{first:null,wrong:[],openedTarget:false,openedOther:false,returned:false,returnVia:"",skipped:false,emptyReturns:0,pathAfter:[]},
+      sr:{query:"",lastVia:null,queries:[],results:[],edits:0,firstRel:null,typed:false,voice:false,voiceNote:false,opened:[],firstDone:null,found:false,wrongFinish:false,skipped:false,backFromWrong:0,leftTarget:0}},
+  a3:{srcViews:0,srcBeforeSubmit:false,srcBeforeQ1:false,ans:{},first:null,submits:0,edits:0,retries:0,lastResult:null,lastAns:null,shopTaps:0,menuOpens:0,whyViews:0,pageViews:0,postViews:0,hideTaps:0,reportTaps:0},
+  a4:{q1:null,q1first:null,adds:0,edits:0,text:"",prevLen:0,typed:false,voice:false,voiceNote:false,typingLogged:false,deletions:0,reviews:0,
+      editsFromReview:0,confirmed:null,confirms:0,skippedQ:false,adviceViews:0,srcViews:0,justAdded:false,code:{gen:"",rel:"",clr:""}},
+  a5:{p1:{ans:{},first:null,submits:0,edits:0,infoViews:0,infoBeforeQ1:false,threadViews:0,joinTaps:0,skipped:false},
+      p2:{pw:null,pwFirst:null,pwEdits:0,tfaOn:false,tfaToggles:0,tfa:null,tfaFirst:null,tfaEdits:0,
+          opened:[],cur:null,drafts:{off:"",scam:""},typed:false,sent:[],sentCode:false,repliedScam:false,junked:[],finished:false,skipped:false},
+      p1Done:false}};}
+let S;
+const store={get(){try{return JSON.parse(localStorage.getItem(KEY))}catch(e){return null}},
+  set(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}},del(){try{localStorage.removeItem(KEY)}catch(e){}}};
+const save=()=>store.set();
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const ms=()=>Date.now()-S.t0;
+const fmt=t=>{const s=Math.floor(t/1000);return `${String(Math.floor(s/60)).padStart(2,"0")}:${String(s%60).padStart(2,"0")}`;};
+const curAct=()=>(SCR[S.screen]||{}).act||0;
+let RV_OPEN=false;
+function log(type,detail=""){
+  S.log.push({t:ms(),act:curAct(),scr:S.screen,type,detail:String(detail)});save();
+  if(RV_OPEN&&!$("rv").contains(document.activeElement)) renderRV();
+}
+
+/* =====================================================================
+   4. SCREENS + NAVIGATION ENGINE
+   ===================================================================== */
+const SCR={};
+function def(id,act,label,view,o={}){SCR[id]=Object.assign({id,act,label,view},o);}
+const HOOK={2:(scr,from)=>a2Enter(scr,from)};
+
+function go(id,push=true){
+  const from=S.screen,fa=SCR[from].act,ta=SCR[id].act;
+  if(push) S.hist.push(from);
+  leave();
+  if(fa!==ta&&fa>=1&&fa<=5){(S.time[fa]=S.time[fa]||{}).end=ms();log("activity end","Activity "+fa);}
+  S.screen=id;
+  if(fa!==ta&&ta>=1&&ta<=5){S.time[ta]=S.time[ta]||{};if(S.time[ta].start==null)S.time[ta].start=ms();log("activity start","Activity "+ta);}
+  log("view",SCR[id].label);
+  HOOK[ta]&&HOOK[ta](id,from);
+  render(true);
+}
+function back(){
+  if(!S.hist.length||SCR[S.screen].noBack) return;
+  const from=S.screen,a=SCR[from].act;
+  S.backs[a]=(S.backs[a]||0)+1;log("back","from "+SCR[from].label);
+  leave();S.screen=S.hist.pop();
+  HOOK[a]&&HOOK[a](S.screen,from);
+  render(true);
+}
+function goAct(n){S.hist=[];go(FIRST[n]||"end",false);}
+/* v8 · tester shortcut: go straight to the start of any activity and clear that activity's answers, so it can be tried
+   again without going through the whole flow. Switched on in the researcher view; off again after "Restart for a new participant". */
+function testGo(n){leave();
+  if(n>=1&&n<=5){S["a"+n]=fresh()["a"+n];delete S.backs[n];delete S.nudges[n];delete S.skipped[n];S.time[n]={start:ms()};}
+  S.hist=[];S.screen=n===0?"welcome":(FIRST[n]||"end");
+  log("tester jump",n===0?"Start":n===6?"End":"Activity "+n+" (its answers cleared)");render(true);}
+function leave(){closeSheet(true);stopSpeech();stopVoice();}
+
+function render(reset){
+  const sc=SCR[S.screen],v=sc.view();
+  $("top").innerHTML=topbar(sc);
+  $("content").innerHTML=v.c+(v.skip?`<div class="skiprow"><button class="link" onclick="openSkip()">${v.skip}</button></div>`:"");
+  $("foot").innerHTML=v.f?`<div class="notice" id="notice" role="alert"></div>${v.f}`:"";
+  if(reset){
+    const ct=$("content");ct.classList.remove("enter");void ct.offsetWidth;ct.classList.add("enter");
+    $("content").scrollTop=0;
+    const h=$("content").querySelector("h1,h2");
+    if(h){h.setAttribute("tabindex","-1");try{h.focus({preventScroll:true});}catch(e){}}
+  }
+}
+const PART={a2:()=>S.screen==="a2_done"?0:(S.a2.part==="A"?1:2),a4_card:1,a4_q1:1,a4_ask:2,a4_review:2,
+  a5_forum:1,a5_q1:1,a5_q2:1,a5_pw:2,a5_tfa:2,a5_lock:2,a5_msgs:2,a5_thread:2};
+function partOf(id){const p=PART[id]??(id.startsWith("a2_")?PART.a2:0);return typeof p==="function"?p():p;}
+function topbar(sc){
+  const canBack=S.hist.length&&!sc.noBack;
+  const inAct=sc.act>=1&&sc.act<=5,pt=inAct?partOf(sc.id):0;
+  return `<div class="tb">
+    ${canBack?`<button class="tbtn back" onclick="back()">${I.back}<span>${C.back}</span></button>`:`<span class="tbspace"></span>`}
+    <div class="tools">
+      <button class="tbtn" onclick="openSize()" aria-label="${C.textSize}"><span class="aa" aria-hidden="true">Aa</span><span>${C.textSize}</span></button>
+      <button class="tbtn${speaking?" on":""}" id="readBtn" onclick="readAloud()">${speaking?I.stop:I.speaker}<span>${speaking?C.stop:C.listen}</span></button>
+    </div></div>
+    ${S.tester?`<div class="tst noread"><span>Tester</span>${[0,1,2,3,4,5,6].map(n=>`<button class="${(n===6?sc.id==="end":n===0?sc.id==="welcome":sc.act===n)?"cur":""}" onclick="testGo(${n})">${n===0?"Start":n===6?"End":n}</button>`).join("")}</div>`:""}
+    ${inAct?`<div class="prog" onclick="secretTap()"><span>${C.act(sc.act)}${pt?` · ${C.partOf(pt)}`:""}</span><span class="segs" aria-hidden="true">${[1,2,3,4,5].map(i=>`<i class="${i<sc.act?"done":i===sc.act?"on":""}"></i>`).join("")}</span></div>`:""}`;
+}
+function nudge(msg){const n=$("notice");if(n){n.textContent="";setTimeout(()=>{n.textContent=msg;},30);}
+  const a=curAct();S.nudges[a]=(S.nudges[a]||0)+1;log("prompted to answer first",msg);}
+
+/* ---------- shared building blocks ---------- */
+function opts(list,sel,fn){ /* list: [key, html, badge]; badge undefined → letter, "" → radio circle */
+  return `<div class="opts" role="radiogroup">${list.map(([k,h,b])=>{
+    const badge=b===""?`<span class="badge radio"></span>`:`<span class="badge">${b===undefined?k:b}</span>`;
+    return `<button class="opt${sel===k?" sel":""}" role="radio" aria-checked="${sel===k}" onclick="${fn}'${k}')">${badge}<span class="otext">${h}</span><span class="tick">${I.check}</span></button>`;}).join("")}</div>`;}
+/* reference bar: opens material to look at again (report / message / advice). Not a choice, not a main action. */
+const refBar=(label,fn)=>`<button class="ref noread" onclick="${fn}">${I.doc}<span>${label}</span>${I.chev}</button>`;
+const qNum=(n,t)=>`<div class="qnum">${C.qOf(n,t)}</div>`;
+function entry(t,s,a){return `<button class="entry" onclick="${a}"><span><span class="et">${t}</span>${s?`<span class="es">${s}</span>`:""}</span>${I.chev}</button>`;}
+function docCard(title,rows,tag=C.sample,cls=""){
+  return `<div class="doc ${cls}"><div class="doc-h"><span>${title}</span>${tag?`<span class="tag">${tag}</span>`:""}</div>${
+    rows.map(([k,v,c])=>`<div class="row"><div class="k">${k}</div><div class="v${c?" "+c:""}">${v}</div></div>`).join("")}</div>`;}
+function reportCard(){const R=C.report,tbl=(cols,rows)=>`<table><thead><tr>${cols.map((c,i)=>`<th${i?' class="n"':""}>${c}</th>`).join("")}</tr></thead><tbody>${
+    rows.map(r=>`<tr>${r.map((c,i)=>`<td${i?' class="n"':""}>${c}</td>`).join("")}</tr>`).join("")}</tbody></table>`;
+  return `<div class="doc"><div class="doc-h"><span>${R.title}</span><span class="tag">${C.sample}</span></div><div class="dxa">
+  <div class="clinic"><b>${R.clinic}</b><small>${R.clinicSub}</small></div>
+  <h3>${R.heading}</h3>
+  <dl class="pinfo">${R.info.map(([k,v])=>`<dt>${k}:</dt><dd>${v}</dd>`).join("")}</dl>
+  <p>${R.dear}</p><p>${R.intro}</p>
+  <div class="sec">${R.histT}</div><p>${R.hist}</p>
+  <div class="sec">${R.resT}</div><table class="res3"><thead><tr>${R.cols.slice(1).map(c=>`<th class="n">${c}</th>`).join("")}</tr></thead><tbody>${
+    R.res.map(r=>`<tr class="rg"><th colspan="3" scope="rowgroup">${r[0]}</th></tr><tr>${r.slice(1).map(c=>`<td class="n">${c}</td>`).join("")}</tr>`).join("")}</tbody></table>
+  <div class="sec">${R.chgT}</div>${tbl(R.chgCols,R.chg)}<p class="note">${R.lsc}</p>
+  <div class="sec">${R.afrT}</div>${tbl(["",""],R.afr).replace(/<thead>.*?<\/thead>/,"")}
+  <div class="sec">${R.conT}</div><ol>${R.con.map(x=>`<li>${x}</li>`).join("")}</ol>
+  <div class="sig">${R.sign[0]}<br><i>${R.sign[1]}</i><br><b>${R.sign[2]}</b><br>${R.sign[3]}</div>
+  <div class="key">${R.key.map(x=>`<p>${x}</p>`).join("")}</div></div></div>`;}
+const doneBlock=(t,b)=>`<div class="donehead">${I.check}</div><h2 class="center">${t}</h2><p class="lead center">${b}</p>`;
+const okBox=(t,b,cls="ok",icon=I.check)=>`<div class="fb ${cls}"><b>${icon}${t}</b>${b}</div>`;
+
+/* ---------- bottom sheet ---------- */
+function openSheet(title,body){
+  $("sheet").innerHTML=`<div class="sh-head"><h3 id="shTitle">${title}</h3><button class="xbtn" aria-label="${C.close}" onclick="closeSheet()">${I.x}</button></div><div class="sh-body">${body}</div>`;
+  $("sheet").classList.add("open");$("scrim").classList.add("open");
+  setTimeout(()=>{const h=$("shTitle");if(h){h.setAttribute("tabindex","-1");h.focus({preventScroll:true});}},60);
+}
+function closeSheet(silent){if(!$("sheet").classList.contains("open"))return;$("sheet").classList.remove("open");$("scrim").classList.remove("open");if(!silent)stopSpeech();}
+const sheetOpen=()=>$("sheet").classList.contains("open");
+
+/* ---------- skip ---------- */
+function openSkip(){
+  const a=curAct(),s=S.screen;let two=false,body;
+  if(a===2){two=true;const p=S.a2.part==="A"?C.part1:C.part2;
+    body=`<button class="btn secondary" onclick="a2SkipPart()">${C.skipOnly(p)}</button><button class="btn secondary" onclick="skipActivity()">${C.skipWhole}</button>`;}
+  else if(a===4&&["a4_ask","a4_review"].includes(s)){two=true;
+    body=`<button class="btn secondary" onclick="a4SkipQ()">${C.skipOnly(C.part2)}</button><button class="btn secondary" onclick="skipActivity()">${C.skipWhole}</button>`;}
+  else if(a===5&&s!=="a5_done"){two=true;const p=A5_P1.includes(s)?C.part1:C.part2;
+    body=`<button class="btn secondary" onclick="a5SkipPart()">${C.skipOnly(p)}</button><button class="btn secondary" onclick="skipActivity()">${C.skipWhole}</button>`;}
+  else body=`<button class="btn secondary" onclick="skipActivity()">${C.skipYes}</button>`;
+  log("open skip",SCR[s].label);
+  openSheet(two?C.skipPQ:C.skipQ,`<p class="lead">${C.skipBody}</p><button class="btn primary" onclick="closeSheet();log('keep going')">${C.keep}</button>${body}`);
+}
+function skipActivity(){const a=curAct();S.skipped[a]=true;log("skip activity",SCR[S.screen].label);goAct(a+1);}
+
+/* ---------- text size (never counted as difficulty) ---------- */
+function applyScale(){document.documentElement.style.setProperty("--scale",S.scale);}
+function openSize(){
+  openSheet(C.textSize,`${opts(C.sizes.map(([v,l])=>[String(v),`<span>${l}</span>`,""]),String(S.scale),"setSize(")}
+    <p class="meta" style="margin:1rem 0">${C.sizeNote}</p><button class="btn primary" onclick="closeSheet()">${C.done}</button>`);
+  /* each choice is shown at its own size, independent of the current setting */
+  $("sheet").querySelectorAll(".opt").forEach((b,i)=>{const px=(17*C.sizes[i][0])+"px";b.classList.add("size");b.style.fontSize=px;
+    const p=document.createElement("span");p.className="aa-prev";p.style.fontSize="1.25em";p.textContent="Aa";b.insertBefore(p,b.querySelector(".otext"));});
+}
+function setSize(v){v=Number(v);if(S.scale===v)return;S.scale=v;applyScale();S.assist.size++;log("text size","×"+v+" (not a difficulty signal)");openSize();}
+
+/* ---------- read aloud (en-AU; reads the open sheet if there is one) ---------- */
+let speaking=false;
+function pickVoice(){try{const vs=speechSynthesis.getVoices();return vs.find(v=>v.lang.replace("_","-")===C.lang)||vs.find(v=>v.lang.startsWith(C.lang.slice(0,2)));}catch(e){return null;}}
+function updRead(){const b=$("readBtn");if(b){b.classList.toggle("on",speaking);b.innerHTML=(speaking?I.stop:I.speaker)+`<span>${speaking?C.stop:C.listen}</span>`;}}
+function stopSpeech(){if("speechSynthesis" in window)try{speechSynthesis.cancel();}catch(e){}speaking=false;updRead();}
+/* read content only: buttons that are controls (reference bars, Speak, edit links, skip, "Full task") are left out.
+   The clone is laid out off-screen so innerText keeps sentence breaks. Answer options and their letters are kept. */
+function readableText(src){
+  const box=document.createElement("div");box.className="readclone";box.setAttribute("aria-hidden","true");box.style.width=src.clientWidth+"px";
+  const cl=src.cloneNode(true);cl.removeAttribute("id");
+  cl.querySelectorAll(".noread,.skiprow,.btn,.xbtn,.iconbtn,svg").forEach(e=>e.remove());
+  box.appendChild(cl);document.body.appendChild(box);const t=cl.innerText;box.remove();return t;}
+function readAloud(){
+  if(speaking){stopSpeech();log("read aloud stopped");return;}
+  if(!("speechSynthesis" in window)){S.tech.push("read aloud unavailable");log("⚙ technical issue","read aloud unavailable");return;}
+  const src=sheetOpen()?$("sheet").querySelector(".sh-body"):$("content");
+  const head=sheetOpen()?$("shTitle").innerText+". ":"";
+  const u=new SpeechSynthesisUtterance(head+readableText(src));u.lang=C.lang;const v=pickVoice();if(v)u.voice=v;u.rate=.85;
+  u.onend=u.onerror=()=>{speaking=false;updRead();};
+  S.assist.read++;log("read aloud",(sheetOpen()?"sheet: "+$("shTitle").innerText:SCR[S.screen].label)+" (not a difficulty signal)");
+  speaking=true;updRead();speechSynthesis.speak(u);
+}
+
+/* ---------- voice input → transcript the person checks ---------- */
+let VOICE=null;
+function voiceUnavailable(why){S.tech.push("voice: "+why);log("⚙ technical issue","voice input: "+why);
+  openSheet(C.voiceNo.t,`<p class="lead">${C.voiceNo.b}</p><button class="btn primary" onclick="closeSheet()">${C.voiceNo.ok}</button>`);}
+function startVoice(btn,onText){
+  if(VOICE){stopVoice();return;}
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  log("voice: tapped Speak",SCR[S.screen].label);
+  if(!SR) return voiceUnavailable("not supported in this browser");
+  let r;try{r=new SR();}catch(e){return voiceUnavailable("could not start");}
+  r.lang=C.lang;r.interimResults=false;r.maxAlternatives=1;VOICE=r;
+  btn.classList.add("rec");btn.innerHTML=I.stop+`<span>${C.stopSpeak}</span>`;
+  r.onresult=e=>{const t=e.results[0][0].transcript;log("voice: transcript",`“${t}”`);onText(t);};
+  r.onerror=e=>{VOICE=null;voiceUnavailable(e.error||"error");};
+  r.onend=()=>{VOICE=null;btn.classList.remove("rec");btn.innerHTML=I.mic+`<span>${C.speak}</span>`;};
+  try{r.start();}catch(e){VOICE=null;voiceUnavailable("could not start");}
+}
+function stopVoice(){if(VOICE){try{VOICE.stop();}catch(e){}VOICE=null;}}
+
+/* =====================================================================
+   5. WELCOME + INTRO
+   ===================================================================== */
+def("welcome",0,"S01 · Welcome",()=>({
+  c:`<div class="hero sm">${BONE}</div><h1 onclick="secretTap()">${C.welcome.title}</h1>
+    <p class="lead center">${C.welcome.sub}</p>
+    <ol class="steps">${C.intro.items.map((x,i)=>`<li><span class="num">${i+1}</span><span>${x}</span></li>`).join("")}</ol>
+    ${okBox(C.welcome.noteT,C.welcome.note,"info",I.info)}
+    <p class="meta center">${C.welcome.tools}</p>`,
+  f:`<button class="btn primary" onclick="goAct(1)">${C.welcome.start}</button>`}),{noBack:true});
+
+/* =====================================================================
+   6. ACTIVITY 1 · Understand a report
+   ===================================================================== */
+def("a1_report",1,"S02-01A · Sample report",()=>({
+  c:`<h2>${C.a1.t}</h2><p class="lead">${C.a1.lead}</p>${reportCard()}`,
+  f:`<button class="btn primary" onclick="go('a1_q1')">${C.a1.answer}</button>`,skip:C.skipAct}),{noBack:true});
+[1,2,3].forEach(n=>def("a1_q"+n,1,["S02-01B · Question 1","S02-01 · Question 2","S02-01 · Question 3"][n-1],()=>{
+  const k="q"+n,q=C.a1.q[k],last=n===3;
+  return {c:`${qNum(n)}${refBar(C.a1.view,`a1Report('Q${n}')`)}
+    <h2 class="q">${q.t}</h2>${opts(Object.entries(q.o),S.a1.ans[k],"a1Pick('"+k+"',")}`,
+    f:`<button class="btn primary" onclick="${last?"a1Submit()":"a1Next("+n+")"}">${last?C.a1.submit:C.next}</button>`,skip:C.skipAct};}));
+def("a1_fb",1,"S02-01 · Activity done",()=>{
+  /* neutral: no per-question right/wrong (see design-decisions). Re-read / change entry points kept so reviewViews & retries are still recorded. */
+  let c=doneBlock(C.a1.doneT,C.a1.doneB)+`<div class="after"><button class="link noread" onclick="a1Again()">${C.a1.again}</button>
+    <button class="link noread" onclick="a1Change()">${C.changeAns}</button></div>`;
+  return {c,f:`<button class="btn primary" onclick="log('next activity');goAct(2)">${C.nextAct}</button>`};},{noBack:true});
+
+function a1Pick(q,k){const A=S.a1,prev=A.ans[q];if(prev===k)return;if(prev&&A.first===null)A.edits++;
+  A.ans[q]=k;log(prev?"change answer":"select",`${q.toUpperCase()}: ${prev?prev+" → ":""}${k}`);render(false);}
+function a1Next(n){if(!S.a1.ans["q"+n])return nudge(C.pickFirst);go("a1_q"+(n+1));}
+function a1Submit(){const A=S.a1,miss=[1,2,3].find(i=>!A.ans["q"+i]);if(miss)return nudge(C.allFirst(miss));
+  const r={q1:A.ans.q1===KEY1.a1.q1,q2:A.ans.q2===KEY1.a1.q2,q3:A.ans.q3===KEY1.a1.q3};
+  A.submits++;A.lastResult=r;A.lastAns={...A.ans};
+  if(A.first===null){A.first={...A.ans};log("SUBMIT #1 (locked)",`Q1 ${A.ans.q1} · Q2 ${A.ans.q2} · Q3 ${A.ans.q3}`);
+    if(A.ans.q1==="A")log("thinks result is normal","Q1 = A (report says osteopenia, which is lower than normal)");
+    if(A.ans.q2==="A")log("misread change","Q2 = A (read the negative % as a big drop; report says no significant change)");}
+  else log("submit #"+A.submits,`Q1 ${A.ans.q1} · Q2 ${A.ans.q2} · Q3 ${A.ans.q3}`);
+  S.hist=[];go("a1_fb",false);}
+function a1Report(where){S.a1.reportViews++;log("view report","from "+where);
+  openSheet(C.a1.sheetT,reportCard()+`<button class="btn primary" onclick="closeSheet()">${C.a1.backQ}</button>`);}
+function a1Again(){S.a1.reviewViews++;log("look at report again","after finishing");
+  openSheet(C.a1.sheetT,reportCard()+`<button class="btn primary" onclick="closeSheet()">${C.close}</button>`);}
+function a1Change(){S.a1.retries++;log("change answers","after finishing");S.hist=["a1_report"];go("a1_q1",false);}
+
+/* =====================================================================
+   7. ACTIVITY 2 · Find an appointment (A) and search (B)
+   ===================================================================== */
+/* v7 · shared parts of a patient-information page (A2 articles and the A4 advice): topic line with a Sample tag, and a review line */
+const artHead=t=>`<div class="eyebrow arthead"><span>${t}</span><span class="tag">${C.sample}</span></div>`;
+const reviewedLine=()=>`<p class="meta" style="display:flex;gap:6px;align-items:center;margin:0">${I.check.replace("<svg","<svg style='width:1.1rem;height:1.1rem;flex:none;color:var(--ok-ink)'")}<span>${C.a2.reviewed}</span></p>`;
+const SEC={a2_reports:"Reports",a2_followup:"Follow-up",a2_info:"Health information",a2_sec_meds:"Medicines",a2_sec_msg:"Messages",a2_sec_me:"My details",a2_jul:"20 July 2030 details"};
+const A2NAME=Object.assign({a2_jun:"12 June 2030 details",a2_menu:"Activity menu"},SEC);
+/* v6 Part 1 menu: six icon + label tiles in a 2-column grid; the appointment is still under Follow-up */
+const MENU=[["a2_reports","reports","doc"],["a2_sec_meds","meds","pill"],["a2_followup","followup","cal"],["a2_info","info","book"],["a2_sec_msg","msg","chat"],["a2_sec_me","me","person"]];
+const A2WRONG=["a2_reports","a2_info","a2_sec_meds","a2_sec_msg","a2_sec_me","a2_jul"];
+const ART_TARGET={walk:true,reports:false,proto:false,balance:false,shoes:false,afterfall:false};
+/* v6 Part 2: articles that belong to the search topic; all show "Reviewed practice material", so the tick no longer marks the target */
+const SEARCH_POOL=["walk","balance","shoes","afterfall"];
+/* fixed order for any on-topic search; the target is not first */
+const RESULT_ORDER=["balance","shoes","walk","afterfall"];
+function matchSearch(q){
+  const REL=/fall|fell|trip|slip|stumbl|steady|balance|walk|hall|corridor|passage|path|door|clutter|tidy|mess|clear|obstacle|floor|stair|step|rug|\bmats?\b|cable|wire|cord|shoe|slipper|footwear|\bbags?\b|\bbox(es)?\b|hazard|safe|danger|injur|hurt|accident|exercis|prevent|home|house/i;
+  if(REL.test(q))return RESULT_ORDER.slice();
+  if(/report|bone|density|scan|score|result|test/i.test(q))return["reports"];
+  if(/\bapp\b|prototype|using|help|text|size/i.test(q))return["proto"];
+  return[];
+}
+function a2Enter(scr,from){
+  if(scr==="a2_menu")S.hist=[];
+  const A=S.a2;
+  if(A.part!=="A"){a2EnterB(scr,from);return;}
+  const n=A.nav;
+  if(from==="a2_menu"&&SEC[scr]&&!n.first){n.first=scr;log("first section tapped",SEC[scr]);}
+  if(A2WRONG.includes(scr)&&!n.wrong.includes(scr))n.wrong.push(scr);
+  if(scr==="a2_jul")n.openedOther=true;
+  /* v6: no "Back to activity menu" button, so record every screen between opening the target and reaching the menu */
+  if(n.openedTarget&&!n.returned)n.pathAfter.push(scr);
+  if(scr==="a2_jun"&&!n.openedTarget){n.openedTarget=true;n.pathAfter=[];log("✓ opened & viewed target","12 June 2030 details");}
+  if(scr==="a2_menu"&&from!=="a2_menu"&&SCR[from]&&SCR[from].act===2){
+    if(n.openedTarget){n.returned=true;n.returnVia=`via Back · ${n.pathAfter.length} step${n.pathAfter.length===1?"":"s"} after the target`;A.part="B";
+      log("✓ Part A complete","returned to activity menu "+n.returnVia);}
+    else{n.emptyReturns++;log("returned to menu","target not yet opened");}
+  }
+}
+/* v6 Part 2 navigation: leaving an article for the results page (only possible with Back) */
+function a2EnterB(scr,from){
+  const s=S.a2.sr;
+  if(scr==="a2_results"&&from&&from.startsWith("a2_art_")){const k=from.slice(7);
+    if(ART_TARGET[k]){s.leftTarget++;log("left target article","went back to results without choosing it");}
+    else{s.backFromWrong++;log("✓ back to results","from non-target article: "+C.a2.art[k].t);}}
+}
+const a2strip=()=>`<button class="task" onclick="a2Task()">${I.task}<span class="tt"><b>${C.a2.taskLabel}</b> ${S.a2.part==="A"?C.a2.task1:C.a2.task2}</span><span class="show noread">${C.a2.show}</span></button>`;
+function a2Task(){S.a2.taskViews++;log("view task instruction","not a help request");
+  openSheet(C.a2.taskT,`<p class="lead">${S.a2.part==="A"?C.a2.taskFull1:C.a2.taskFull2}</p><button class="btn primary" onclick="closeSheet()">${C.a2.ok}</button>`);}
+const a2skip=()=>S.a2.part==="A"||S.screen!=="a2_done"?C.skipPart:null;
+
+def("a2_menu",2,"S02-02A · Activity menu",()=>S.a2.part==="A"?{
+  c:`<h2>${C.a2.t1}</h2><p class="lead">${C.a2.lead1}</p>
+    <div class="secthead">${C.a2.sections}</div>
+    <div class="tiles">${MENU.map(([id,key,ic])=>`<button class="tile" onclick="go('${id}')"><span class="ticon">${I[ic]}</span><span>${C.a2.sec[key]}</span></button>`).join("")}</div>`,
+  skip:C.skipPart}:{
+  c:`${S.a2.nav.returned?okBox(C.a2.p1done,C.a2.p1doneB):`<div class="fb try"><b>${C.a2.p1skip}</b>${C.a2.p1skipB}</div>`}
+    <h2>${C.a2.t2}</h2><p class="lead">${C.a2.lead2a}</p><p class="lead">${C.a2.lead2b}</p>`,
+  f:`<button class="btn primary" onclick="go('a2_search')">${I.search}<span>${C.a2.openSearch}</span></button>`,skip:C.skipPart},{noBack:true});
+def("a2_reports",2,"S02-02A › Reports (non-target)",()=>({c:`${a2strip()}<h2>${C.a2.reportsT}</h2>
+  <div class="entries">${entry(C.a2.reportEntry[0],C.a2.reportEntry[1],"a2OpenReport()")}</div>`,skip:C.skipPart}));
+def("a2_followup",2,"S02-02B · Follow-up appointments",()=>({c:`${a2strip()}<h2>${C.a2.followT}</h2>
+  <div class="entries">${entry("12 June 2030","","go('a2_jun')")}${entry("20 July 2030","","go('a2_jul')")}</div>`,skip:C.skipPart}));
+def("a2_info",2,"S02-02A › Health information (non-target)",()=>({c:`${a2strip()}<h2>${C.a2.infoT}</h2>
+  <div class="entries">${entry(C.a2.art.reports.t,"","a2OpenArt('reports')")}${entry(C.a2.art.proto.t,"","a2OpenArt('proto')")}</div>`,skip:C.skipPart}));
+/* v6 sections that hold nothing for this task; entering one is recorded as a wrong page */
+[["a2_sec_meds","meds"],["a2_sec_msg","msg"],["a2_sec_me","me"]].forEach(([id,key])=>def(id,2,`S02-02A › ${C.a2.sec[key]} (non-target)`,()=>({
+  c:`${a2strip()}<h2>${C.a2.sec[key]}</h2><p class="lead">${C.a2.emptyB}</p>`,skip:C.skipPart})));
+/* v6: no "Back to activity menu" button; the only way back is Back at the top (two taps to the menu) */
+const apptView=(d,t)=>({c:`${a2strip()}<h2>${C.a2.apptT}</h2>${docCard(C.a2.apptCard,[[C.a2.apptRows.date,d,"big"],[C.a2.apptRows.time,t],[C.a2.apptRows.clinic,C.a2.clinic],[C.a2.apptRows.addr,C.a2.addr]])}`,
+  skip:C.skipPart});
+def("a2_jun",2,"S02-02C · 12 June 2030 details (target)",()=>apptView("12 June 2030","10:30 am"));
+def("a2_jul",2,"S02-02B › 20 July 2030 (non-target)",()=>apptView("20 July 2030","2:00 pm"));
+def("a2_search",2,"S02-02D · Search",()=>{const s=S.a2.sr;return {c:`${a2strip()}<h2>${C.a2.searchT}</h2>
+  <label class="sr-only" for="q">${C.a2.searchLabel}</label>
+  <div class="searchrow"><input id="q" class="field" type="search" enterkeyhint="search" autocomplete="off" placeholder="${C.a2.placeholder}" value="${esc(s.query)}" oninput="a2Input(this,event)" onkeydown="if(event.key==='Enter'){event.preventDefault();a2Search()}">
+    <button class="iconbtn noread" id="qclear" onclick="a2Clear()" aria-label="${C.a2.clear}"${s.query?"":" hidden"}>${I.x}</button></div>
+  ${s.voiceNote?`<div class="fb try"><b>${C.checkWords.t}</b>${C.checkWords.b}</div>`:""}
+  <button class="btn secondary noread" onclick="startVoice(this,a2Voice)">${I.mic}<span>${C.speak}</span></button>`,
+  f:`<button class="btn primary" onclick="a2Search()">${I.search}<span>${C.a2.search}</span></button>`,skip:C.skipPart};});
+def("a2_results",2,"S02-02E · Search results",()=>{const s=S.a2.sr,q=s.queries[s.queries.length-1].q;return {c:`${a2strip()}
+  <h2>${C.a2.resultsFor(esc(q))}</h2>
+  <div class="stack" style="margin-top:0"><button class="btn secondary sm noread" onclick="a2ChangeWords()">${I.pencil}<span>${C.a2.changeWords}</span></button></div>
+  ${s.results.length?`<div class="entries">${s.results.map(k=>entry(C.a2.art[k].t,"",`a2OpenArt('${k}')`)).join("")}</div>`
+    :`<div class="fb try"><b>${C.a2.noneT}</b>${C.a2.none}</div>`}`,skip:C.skipPart};});
+["walk","reports","proto","balance","shoes","afterfall"].forEach(k=>def("a2_art_"+k,2,k==="walk"?"S02-02E › Keeping a walkway clear (target)":"Article · "+C.a2.art[k].t+(SEARCH_POOL.includes(k)?" (look-alike)":""),()=>{
+  const a=C.a2.art[k],fromSearch=S.hist[S.hist.length-1]==="a2_results",pool=SEARCH_POOL.includes(k);
+  return {c:`${a2strip()}<div class="article">${artHead(pool?C.a2.artEyebrowFalls:C.a2.artEyebrow)}<h2 style="font-size:1.35rem">${a.t}</h2>${a.b}
+    ${pool?reviewedLine():""}</div>`,
+    f:fromSearch?`<button class="btn primary" onclick="a2Finish('${k}')">${C.a2.thisOne}</button>`:"",skip:C.skipPart};}));
+def("a2_done",2,"S02-02F · Activity done",()=>{const n=S.a2.nav,s=S.a2.sr;
+  const st=(ok,sk)=>ok?`<span class="y">${I.check}${C.a2.rDone}</span>`:`<span class="m">${sk?C.a2.rSkip:C.a2.rNot}</span>`;
+  return {c:`<h2>${C.a2.doneT}</h2><p class="lead">${C.a2.doneLead}</p>
+    <div class="res"><div><span>${C.a2.r1}</span>${st(n.returned,n.skipped)}</div><div><span>${C.a2.r2}</span>${st(s.found||s.wrongFinish,s.skipped)}</div></div>`,
+    f:`<button class="btn primary" onclick="log('next activity');goAct(3)">${C.nextAct}</button>`};},{noBack:true});
+
+function a2OpenReport(){log("open sample report","in Reports (non-target)");openSheet(C.a1.sheetT,reportCard()+`<button class="btn primary" onclick="closeSheet()">${C.close}</button>`);}
+function a2SkipPart(){const A=S.a2;
+  if(A.part==="A"){A.nav.skipped=true;A.part="B";log("skip Part A","navigation: recorded as insufficient information");S.hist=[];go("a2_menu",false);}
+  else{A.sr.skipped=true;log("skip Part B","search: recorded as insufficient information");S.hist=[];go("a2_done",false);}}
+function a2Input(el,e){const s=S.a2.sr;s.query=el.value;const x=$("qclear");if(x)x.hidden=!el.value;
+  if(e&&e.inputType&&e.inputType.startsWith("insert")){if(!s.typed)log("typing started","search box");s.typed=true;}
+  s.lastVia=(s.lastVia==="voice"||s.lastVia==="voice + edited")?"voice + edited":"typed";save();}
+function a2Clear(){const s=S.a2.sr;if(!s.query)return;s.query="";s.voiceNote=false;log("clear search words");render(false);$("q").focus();}
+function a2Voice(t){const s=S.a2.sr;s.query=t;s.voice=true;s.voiceNote=true;s.lastVia="voice";render(false);}
+function a2Search(){const s=S.a2.sr,q=s.query.trim();if(!q)return nudge(C.a2.typeFirst);
+  const res=matchSearch(q),rel=res.includes("walk");
+  if(s.queries.length&&q.toLowerCase()!==s.queries[s.queries.length-1].q.toLowerCase())s.edits++;
+  s.queries.push({q,rel,via:s.lastVia||"typed"});if(s.firstRel===null)s.firstRel=rel;
+  s.results=res;s.voiceNote=false;s.lastVia=null;
+  log("search",`“${q}” → ${res.length} result(s)${rel?" incl. target":""}`);go("a2_results");}
+function a2ChangeWords(){log("change search words");S.hist.pop();go("a2_search",false);}
+function a2OpenArt(k){if(S.screen==="a2_results")S.a2.sr.opened.push(k);
+  log("open article",C.a2.art[k].t+(ART_TARGET[k]?" (target)":" (non-target)"));go("a2_art_"+k);}
+function a2Finish(k){const s=S.a2.sr;if(!s.firstDone)s.firstDone=k;
+  if(ART_TARGET[k]){s.found=true;log("✓ Part B complete","‘This is the one’ on target article");S.hist=[];go("a2_done",false);return;}
+  /* no correction prompt: finishing on a non-target article is recorded, and the person moves on as normal */
+  s.wrongFinish=true;log("✗ Part B finished on non-target article",C.a2.art[k].t);S.hist=[];go("a2_done",false);}
+
+/* =====================================================================
+   8. ACTIVITY 3 · Check health information
+   ===================================================================== */
+/* v8: sponsored post. The ⋯ button and the page name work wherever the post is shown (page, or the look-again sheet);
+   A3CTX remembers where it was opened from. "Shop now" is only live on the post page, where a tap is logged. */
+let A3CTX="page";
+const adCard=(live=false)=>{const A=C.a3;return `<div class="post">
+  <div class="post-h"><button class="post-name" onclick="a3Page()"><span class="post-av noread" aria-hidden="true">${A.avatar}</span><span class="post-n"><b>${A.page}</b><span>${A.sponsored}</span></span></button>
+    <span class="tag">${C.sample}</span><button class="post-more noread" aria-label="${A.more}" onclick="a3Menu()">${I.dots}</button></div>
+  <div class="post-t">${A.text.map(p=>`<p>${p}</p>`).join("")}<p class="fine">${A.fine}</p></div>
+  <img class="post-photo" src="${ADPHOTO}" alt="${A.imgAlt}">
+  <div class="post-link"><span class="pl"><small>${A.domain}</small><b>${A.headline}</b><span class="pd">${A.desc}</span></span>
+    <span class="post-cta"${live?` role="button" tabindex="0" onclick="a3Shop()" onkeydown="if(event.key==='Enter')a3Shop()"`:""}>${A.cta}</span></div>
+  <div class="post-react"><span class="rx"><i style="background:#1877F2">${I.thumb}</i><i style="background:#E0245E">${I.heart}</i><em>${A.likes}</em></span><span>${A.stats}</span></div>
+  <div class="post-acts noread" aria-hidden="true"><span>${I.thumb}${A.like}</span><span>${I.chat}${A.comment}</span><span>${I.fwd}${A.share}</span></div></div>`;};
+function a3Shop(){const A=S.a3;A.shopTaps=(A.shopTaps||0)+1;log("tapped ‘Shop now’ in the ad","tap "+A.shopTaps);
+  openSheet(C.a3.shopT,`<p class="lead">${C.a3.shopB}</p><button class="btn primary" onclick="closeSheet()">${C.a3.shopOk}</button>`);}
+/* advertiser details count as "checked the source": Why am I seeing this ad? (⋯ menu) or Page transparency (page name) */
+function a3Note(where){const A=S.a3;A.srcViews++;if(!A.first)A.srcBeforeSubmit=true;if(!A.ans.q1&&!A.first)A.srcBeforeQ1=true;log("view advertiser details",where);}
+const a3BackBtn=()=>A3CTX==="page"?`<button class="btn primary" onclick="closeSheet()">${C.close}</button>`:`<button class="btn primary" onclick="a3PostSheet()">${C.a3.backPost}</button>`;
+function a3Menu(){const A=S.a3;A.menuOpens=(A.menuOpens||0)+1;log("opened post menu (⋯)","from "+A3CTX);
+  openSheet(C.a3.menuT,`<div class="entries">${entry(C.a3.why,"","a3Why()")}${entry(C.a3.hide,"","a3Inert('hide')")}${entry(C.a3.report,"","a3Inert('report')")}</div>${a3BackBtn()}`);}
+function a3Why(){const A=S.a3;A.whyViews=(A.whyViews||0)+1;a3Note("Why am I seeing this ad? · from "+A3CTX);
+  openSheet(C.a3.whyT,`<p class="lead">${C.a3.whyLead}</p>${docCard(C.a3.whyAud,C.a3.whyRows,"")}${docCard(C.a3.advT,C.a3.advRows)}${a3BackBtn()}`);}
+function a3Page(){const A=S.a3;A.pageViews=(A.pageViews||0)+1;a3Note("page name → Page transparency · from "+A3CTX);
+  openSheet(C.a3.page,docCard(C.a3.pageT,C.a3.pageRows)+a3BackBtn());}
+function a3Inert(k){const A=S.a3,f=k==="hide"?"hideTaps":"reportTaps";A[f]=(A[f]||0)+1;log(k==="hide"?"tapped ‘Hide ad’":"tapped ‘Report ad’","from "+A3CTX);
+  openSheet(C.a3.shopT,`<p class="lead">${C.a3.inertB}</p>${a3BackBtn()}`);}
+def("a3_ad",3,"S02-03A · Read the post",()=>{A3CTX="page";return {c:`<h2>${C.a3.t}</h2><p class="lead">${C.a3.lead}</p>${adCard(true)}`,
+  f:`<button class="btn primary" onclick="go('a3_q1')">${C.a3.answer}</button>`,skip:C.skipAct};},{noBack:true});
+[1,2,3].forEach(n=>def("a3_q"+n,3,["S02-03 · Q1 What is it?","S02-03 · Q2 How to check","S02-03C · Q3 What should Helen do?"][n-1],()=>{
+  const k="q"+n,q=C.a3.q[k],last=n===3;
+  return {c:`${qNum(n)}${refBar(C.a3.viewPost,`a3Sheet('Q${n}')`)}
+    ${last?`<div class="scenario" style="margin-top:1rem">${C.a3.scenario}</div>`:""}
+    <h2 class="q">${q.t}</h2>${opts(Object.entries(q.o),S.a3.ans[k],"a3Pick('"+k+"',")}`,
+    f:`<button class="btn primary" onclick="${last?"a3Submit()":"a3Next("+n+")"}">${last?C.a3.submit:C.next}</button>`,skip:C.skipAct};}));
+def("a3_fb",3,"S02-03D · Activity done",()=>{
+  let c=doneBlock(C.a3.doneT,C.a3.doneB)+`<div class="after"><button class="link noread" onclick="a3Again()">${C.a3.again}</button>
+    <button class="link noread" onclick="a3Change()">${C.changeAns}</button></div>`;
+  return {c,f:`<button class="btn primary" onclick="log('next activity');goAct(4)">${C.nextAct}</button>`};},{noBack:true});
+function a3PostSheet(){openSheet(C.a3.sheetT,adCard()+`<button class="btn primary" onclick="closeSheet()">${A3CTX==="after"?C.close:C.a3.backQ}</button>`);}
+function a3Sheet(where){A3CTX=where;S.a3.postViews=(S.a3.postViews||0)+1;log("view post again","from "+where);a3PostSheet();}
+function a3Again(){A3CTX="after";log("view post again","after finishing");a3PostSheet();}
+function a3Pick(q,k){const A=S.a3,prev=A.ans[q];if(prev===k)return;if(prev&&A.first===null)A.edits++;
+  A.ans[q]=k;log(prev?"change answer":"select",`${q.toUpperCase()}: ${prev?prev+" → ":""}${k}`);render(false);}
+function a3Next(n){if(!S.a3.ans["q"+n])return nudge(C.pickFirst);go("a3_q"+(n+1));}
+function a3Submit(){const A=S.a3,miss=[1,2,3].find(i=>!A.ans["q"+i]);if(miss)return nudge(C.allFirst(miss));
+  const r={q1:A.ans.q1===KEY1.a3.q1,q2:A.ans.q2===KEY1.a3.q2,q3:A.ans.q3===KEY1.a3.q3};
+  A.submits++;A.lastResult=r;A.lastAns={...A.ans};
+  if(A.first===null){A.first={...A.ans};log("SUBMIT #1 (locked)",`Q1 ${A.ans.q1} · Q2 ${A.ans.q2} · Q3 ${A.ans.q3} · advertiser details viewed: ${A.srcBeforeSubmit?"yes":"no"}`);
+    if(A.ans.q1==="B")log("took the ad for a personal story","Q1 = B");
+    if(A.ans.q2==="B")log("would check with the seller's own site","Q2 = B");
+    if(A.ans.q2==="C")log("would rely on likes and shares","Q2 = C");
+    if(A.ans.q3==="C")log("⚠ critical safety error","Q3 = C (product in place of prescribed medicine)");
+    if(A.ans.q3==="A")log("adds the product without asking (not critical)","Q3 = A (‘natural, so it can't hurt’)");}
+  else log("submit #"+A.submits,`Q1 ${A.ans.q1} · Q2 ${A.ans.q2} · Q3 ${A.ans.q3}`);
+  S.hist=[];go("a3_fb",false);}
+function a3Change(){S.a3.retries++;log("change answers","after finishing");S.hist=["a3_ad"];go("a3_q1",false);}
+
+/* =====================================================================
+   9. ACTIVITY 4 · Put advice into practice + prepare a question
+   ===================================================================== */
+/* v7: the advice is the same patient-information page as the A2 target article */
+const adviceCard=src=>`<div class="article">${artHead(C.a2.artEyebrowFalls)}<h3>${C.a2.art.walk.t}</h3>${C.a2.art.walk.b}
+  ${reviewedLine()}
+  ${src?`<div class="src"><button class="link noread" style="padding-left:0" onclick="a4Source()">${C.a4.source}</button></div>`:""}</div>`;
+def("a4_card",4,"S02-04A · Fall-prevention advice",()=>({c:`<h2>${C.a4.t1}</h2><p class="lead">${C.a4.lead1}</p>${adviceCard(true)}`,
+  f:`<button class="btn primary" onclick="go('a4_q1')">${C.a4.choose}</button>`,skip:C.skipAct}),{noBack:true});
+def("a4_q1",4,"S02-04B · Choose one step",()=>({c:`${refBar(C.a4.viewAdv,"a4Advice()")}
+  <div class="scenario" style="margin-top:1rem">${C.a4.situation}</div>
+  <h2 class="q">${C.a4.q}</h2>${opts(Object.entries(C.a4.o),S.a4.q1,"a4Pick(")}`,
+  f:`<button class="btn primary" onclick="a4Add()">${C.a4.add}</button>`,skip:C.skipAct}));
+def("a4_ask",4,"S02-04C · Prepare a question",()=>{const A=S.a4;const added=A.justAdded;A.justAdded=false;
+  return {c:`${added?`<div class="fb ok" style="padding:10px 14px"><b style="margin:0">${I.check}${C.a4.added}</b></div>`:""}
+  <h2>${C.a4.t2}</h2><p class="lead">${C.a4.lead2}</p>
+  ${refBar(C.a4.viewAdv,"a4Advice()")}
+  <label class="fieldlabel" for="qt">${C.a4.myQ}</label>
+  <textarea id="qt" class="field" placeholder="${C.a4.placeholder}" oninput="a4Input(this,event)">${esc(A.text)}</textarea>
+  ${A.voiceNote?`<div class="fb try" style="margin-top:10px"><b>${C.checkWords.t}</b>${C.checkWords.b}</div>`:""}
+  <div class="stack" style="margin-top:12px"><button class="btn secondary noread" onclick="startVoice(this,a4Voice)">${I.mic}<span>${C.speak}</span></button></div>
+  <p class="meta">${C.a4.privacy}</p>`,
+  f:`<button class="btn primary" onclick="a4GoReview()">${C.a4.check}</button>`,skip:C.skipPart};});
+def("a4_review",4,"S02-04D · Check my question",()=>({c:`<h2>${C.a4.reviewT}</h2>
+  <p class="lead">${C.a4.reviewLead}</p><div class="fieldlabel">${C.a4.myQ}</div><div class="quote">${esc(S.a4.text.trim())}</div>
+  <button class="btn secondary sm noread" onclick="a4Edit()">${I.pencil}<span>${C.a4.edit}</span></button>`,
+  f:`<button class="btn primary" onclick="a4Confirm()">${C.a4.confirm}</button>`,skip:C.skipPart}),{noBack:true});
+def("a4_done",4,"S02-04E · Activity done",()=>{const A=S.a4;
+  const c=doneBlock(C.a4.doneT,C.a4.doneOk);
+  return {c,f:`<button class="btn primary" onclick="log('next activity');goAct(5)">${C.nextAct}</button>`};},{noBack:true});
+
+function a4Source(){S.a4.srcViews++;log("view source","advice card");
+  openSheet(C.a4.srcT,docCard(C.a4.srcT,C.a4.src)+`<button class="btn primary" onclick="closeSheet()">${C.close}</button>`);}
+function a4Advice(){S.a4.adviceViews++;log("view advice","from "+S.screen);
+  openSheet(C.a4.advSheet,adviceCard(false)+`<button class="btn primary" onclick="closeSheet()">${C.close}</button>`);}
+function a4Pick(k){const A=S.a4,prev=A.q1;if(prev===k)return;if(prev&&A.q1first===null)A.edits++;
+  A.q1=k;log(prev?"change step":"select step",`${prev?prev+" → ":""}${k}`);render(false);}
+function a4Add(){const A=S.a4;if(!A.q1)return nudge(C.pickFirst);A.adds++;
+  if(A.q1first===null){A.q1first=A.q1;log("ADD STEP #1 (locked)",A.q1);
+    if(A.q1==="B")log("⚠ critical safety error","B: pushes the heavy box alone");
+    if(A.q1==="C")log("no action taken","C: leaves things, ‘takes more care’");}
+  else log("add step again",A.q1);
+  A.justAdded=true;go("a4_ask");}
+function a4Input(el,e){const A=S.a4,v=el.value;if(v.length<A.prevLen)A.deletions++;A.prevLen=v.length;A.text=v;
+  if(e&&e.inputType&&e.inputType.startsWith("insert")){A.typed=true;if(!A.typingLogged){A.typingLogged=true;log("typing started","question box");}}save();}
+function a4Voice(t){const A=S.a4;A.text=(A.text.trim()?A.text.trim()+" ":"")+t;A.prevLen=A.text.length;A.voice=true;A.voiceNote=true;render(false);}
+function a4GoReview(){const A=S.a4;if(!A.text.trim())return nudge(C.a4.typeFirst);A.reviews++;A.typingLogged=false;
+  log("review question",`“${A.text.trim()}”`);go("a4_review");}
+function a4Edit(){S.a4.editsFromReview++;S.a4.voiceNote=false;log("edit from review");S.hist.pop();go("a4_ask",false);}
+function a4Confirm(){const A=S.a4;A.confirms++;
+  if(A.confirmed===null){A.confirmed=A.text.trim();log("CONFIRM #1 (locked)",`“${A.confirmed}”`);}else log("confirm again",`“${A.text.trim()}”`);
+  S.hist=[];go("a4_done",false);}
+function a4SkipQ(){S.a4.skippedQ=true;log("skip question part","recorded as insufficient information");S.hist=[];go("a4_done",false);}
+
+/* =====================================================================
+   10. ACTIVITY 5 · Privacy (public group) + security (password, two-step code, texts)
+   ===================================================================== */
+/* v11: see the note above C.a5. A5CTX remembers where the group post was opened from (the page, or the look-again
+   sheet), so "About" returns to the right place. Viewing the group's About counts as "checked who can read it". */
+let A5CTX="page";
+const A5_P1=["a5_forum","a5_q1","a5_q2"];
+const a5Av=(p,sm)=>`<span class="fbx-av${sm?" sm":""} noread" style="background:${p.col}" aria-hidden="true">${p.ini}</span>`;
+const fbCard=()=>{const F=C.a5.fb,P=F.post;return `<div class="fbx">
+  <div class="fbx-bar noread" aria-hidden="true">${I.back}<span class="t">${F.name}</span>${I.search}${I.dots}</div>
+  <div class="fbx-cover"><span class="tag">${C.sample}</span></div>
+  <div class="fbx-gh"><h3>${F.name}</h3>
+    <button class="fbx-meta" onclick="a5Info()">${I.globe}<span>${F.status} · ${F.members}</span></button>
+    <button class="fbx-join noread" onclick="a5Join()">${I.group}<span>${F.join}</span></button></div>
+  <div class="fbx-sep"></div>
+  <div class="fbx-post"><div class="fbx-who">${a5Av(P)}<span><b>${P.who}</b><small>${P.time} · ${I.globe}</small></span></div><p>${P.b}</p></div>
+  <div class="fbx-react"><span class="rx"><i>${I.thumb}</i>${P.likes}</span><span>${P.comments}</span></div>
+  <div class="fbx-acts noread" aria-hidden="true"><span>${I.thumb}${F.like}</span><span>${I.chat}${F.comment}</span><span>${I.fwd}${F.share}</span></div>
+  <div class="fbx-sort noread">${F.sort}${I.down}</div>
+  ${F.c.map(c=>`<div class="fbx-c">${a5Av(c,true)}<div class="fbx-cb"><div class="fbx-bub"><b>${c.who}</b><p>${c.b}</p></div>
+    <div class="fbx-cm noread"><span>${c.time}</span><span>${F.like}</span><span>${F.reply}</span></div></div></div>`).join("")}</div>`;};
+
+def("a5_forum",5,"S02-05A · Part 1 · Group post",()=>{A5CTX="page";return {c:`<h2>${C.a5.t1}</h2><p class="lead">${C.a5.lead1}</p>${fbCard()}`,
+  f:`<button class="btn primary" onclick="go('a5_q1')">${C.a5.answer}</button>`,skip:C.skipPart};},{noBack:true});
+[1,2].forEach(n=>def("a5_q"+n,5,["S02-05B · Part 1 · Q1 Can someone who hasn't joined see it?","S02-05C · Part 1 · Q2 Which comment protects privacy?"][n-1],()=>{
+  const k="q"+n,q=C.a5.p1q[k],last=n===2;
+  return {c:`${qNum(n,2)}${refBar(C.a5.viewThread,`a5Thread('Q${n}')`)}<h2 class="q">${q.t}</h2>${opts(Object.entries(q.o),S.a5.p1.ans[k],"a5Pick('"+k+"',")}`,
+    f:`<button class="btn primary" onclick="${last?"a5Submit1()":"a5Next1()"}">${last?C.a5.submit:C.next}</button>`,skip:C.skipPart};}));
+
+function a5Info(){const A=S.a5.p1;A.infoViews++;if(!A.first&&!A.ans.q1)A.infoBeforeQ1=true;log("view group About (Public / Visible)","from "+A5CTX);
+  openSheet(C.a5.aboutT,docCard(C.a5.aboutH,C.a5.aboutRows,"")+(A5CTX==="page"?`<button class="btn primary" onclick="closeSheet()">${C.close}</button>`
+    :`<button class="btn primary" onclick="a5ThreadSheet()">${C.a5.backThread}</button>`));}
+function a5Join(){S.a5.p1.joinTaps++;log("tapped ‘Join group’","from "+A5CTX);
+  openSheet(C.a5.joinT,`<p class="lead">${C.a5.joinB}</p>`+(A5CTX==="page"?`<button class="btn primary" onclick="closeSheet()">${C.close}</button>`
+    :`<button class="btn primary" onclick="a5ThreadSheet()">${C.a5.backThread}</button>`));}
+function a5ThreadSheet(){openSheet(C.a5.sheetT,fbCard()+`<button class="btn primary" onclick="closeSheet()">${C.a5.backQ}</button>`);}
+function a5Thread(where){A5CTX=where;S.a5.p1.threadViews++;log("view group post again","from "+where);a5ThreadSheet();}
+function a5Pick(q,k){const A=S.a5.p1,prev=A.ans[q];if(prev===k)return;if(prev&&A.first===null)A.edits++;
+  A.ans[q]=k;log(prev?"change answer":"select",`Part 1 ${q.toUpperCase()}: ${prev?prev+" → ":""}${k}`);render(false);}
+function a5Next1(){if(!S.a5.p1.ans.q1)return nudge(C.pickFirst);go("a5_q2");}
+function a5Submit1(){const A=S.a5.p1,miss=[1,2].find(i=>!A.ans["q"+i]);if(miss)return nudge(C.a5.allBoth(miss));
+  A.submits++;
+  if(A.first===null){A.first={...A.ans};log("SUBMIT Part 1 #1 (locked)",`Q1 ${A.ans.q1} · Q2 ${A.ans.q2} · About viewed: ${A.infoViews?"yes":"no"}`);
+    if(A.ans.q1==="B")log("thinks people must ask to join before they can see a public group","Part 1 Q1 = B");
+    if(A.ans.q1==="C")log("thinks only members can see a public group","Part 1 Q1 = C");
+    if(A.ans.q2==="A")log("missed the writer's own identifying details","Part 1 Q2 = A (where she lives, doctor, treatment, meeting a stranger)");
+    if(A.ans.q2==="B")log("missed someone else's private details","Part 1 Q2 = B (named neighbour's health, where they'll be today)");}
+  else log("submit Part 1 #"+A.submits,`Q1 ${A.ans.q1} · Q2 ${A.ans.q2}`);
+  S.a5.p1Done=true;S.hist=[];go("a5_pw",false);}
+
+/* ---------- Part 2 · iPhone-style screens ---------- */
+const iosNav=(title,bk)=>`<div class="ios-nav noread" aria-hidden="true"><span class="bk">${I.back}${bk||""}</span><span class="tt">${title}</span><span class="sp"></span></div>`;
+def("a5_pw",5,"S02-05D · Part 2 · Q1 A new password",()=>{const A=S.a5,P=A.p2,note=A.p1Done;A.p1Done=false;const W=C.a5.pw;
+  return {c:`${note?`<div class="fb ok" style="padding:10px 14px"><b style="margin:0">${I.check}${C.a5.p1saved}</b></div>`:""}
+  <h2>${C.a5.t2}</h2>${qNum(1,2)}<p class="lead">${C.a5.pwLead}</p>
+  <div class="ios">${iosNav(W.title,C.a5.settings)}<div class="ios-app">${C.a5.app}<span class="tag">${C.sample}</span></div>
+    <div class="ios-note">${W.note}</div><div class="ios-sec">${W.sec}</div>
+    <div class="ios-grp" role="radiogroup">${Object.entries(W.o).map(([k,o])=>`<button class="ios-row${P.pw===k?" sel":""}" role="radio" aria-checked="${P.pw===k}" onclick="a5Pw('${k}')">
+      <span class="rt"><b>${o.t}</b><code>${o.ex}</code></span><span class="ck">${I.check}</span></button>`).join("")}</div></div>`,
+  f:`<button class="btn primary" onclick="a5PwSave()">${C.a5.save}</button>`,skip:C.skipPart};},{noBack:true});
+def("a5_tfa",5,"S02-05E · Part 2 · Q2 Two-step verification",()=>{const P=S.a5.p2,T=C.a5.tfa;
+  return {c:`${qNum(2,2)}<p class="lead">${C.a5.tfaLead}</p>
+  <div class="ios">${iosNav(T.title,C.a5.settings)}<div class="ios-app">${C.a5.app}<span class="tag">${C.sample}</span></div>
+    <div class="ios-sec">&nbsp;</div>
+    <div class="ios-grp"><div class="ios-row" style="cursor:default"><span class="rt"><b>${T.row}</b></span>
+      <button class="sw${P.tfaOn?" on":""}" role="switch" aria-checked="${P.tfaOn}" aria-label="${T.row}" onclick="a5Toggle()"></button></div></div>
+    <div class="ios-foot">${T.foot}${P.tfaOn?`<br><b style="color:#248A3D">${T.isOn}</b>`:""}</div></div>
+  <h2 class="q">${C.a5.tfaQ.t}</h2>${opts(Object.entries(C.a5.tfaQ.o),P.tfa,"a5Tfa(")}`,
+  f:`<button class="btn primary" onclick="a5TfaNext()">${C.next}</button>`,skip:C.skipPart};},{noBack:true});
+const smsIc=`<span class="app-ic" aria-hidden="true">${I.bubbleI}</span>`;
+def("a5_lock",5,"S02-05F · Part 2 · Lock screen (two texts)",()=>{const L=C.a5.lock,M=C.a5.sms,P=S.a5.p2;
+  const n=k=>P.junked.includes(k)?"":`<button class="notif" onclick="a5Open('${k}','lock screen')">${smsIc}<span class="nb"><span class="nh"><b>${M[k].from}</b><small>${L.now}</small></span><span class="nx">${M[k].b}</span></span></button>`;
+  return {c:`<p class="lead">${C.a5.lockLead}</p>
+  <div class="lock"><div class="ld">${L.date}</div><div class="lt">${L.time}</div>${n("scam")}${n("off")}</div><div class="samplebar"><span class="tag">${C.sample}</span></div>`,
+  f:`<button class="btn primary" onclick="a5Finish()">${C.a5.finish}</button>`,skip:C.skipPart};},{noBack:true});
+def("a5_msgs",5,"S02-05G · Part 2 · Messages list",()=>{const M=C.a5.sms,P=S.a5.p2;
+  const row=k=>`<button class="mrow" onclick="a5Open('${k}','Messages list')"><span class="dot${P.opened.includes(k)?" read":""}"></span><span class="mav">${I.person}</span>
+    <span class="mb"><span class="mh"><b>${M[k].from}</b><small>${M[k].time.replace(" am","")}</small></span><span class="mx">${a5Last(k)}</span></span></button>`;
+  const ks=["scam","off"].filter(k=>!P.junked.includes(k));
+  return {c:`<p class="lead">${C.a5.lockLead}</p><div class="msgs"><div class="msgs-h">${C.a5.msgsT}</div>${ks.map(row).join("")||`<div class="mempty">${C.a5.noMsgs}</div>`}</div><div class="samplebar"><span class="tag">${C.sample}</span></div>`,
+  f:`<button class="btn primary" onclick="a5Finish()">${C.a5.finish}</button>`,skip:C.skipPart};},{noBack:true});
+def("a5_thread",5,"S02-05H · Part 2 · Text conversation",()=>{const P=S.a5.p2,k=P.cur||"scam",m=C.a5.sms[k];
+  const mine=P.sent.filter(s=>s.to===k);
+  return {c:`<div class="msgs">
+    <div class="th-h"><button class="th-back" aria-label="${C.back}" onclick="a5ToList()">${I.back}</button>
+      <span class="th-who"><span class="mav">${I.person}</span><span>${m.from}</span></span></div>
+    <div class="th-body"><div class="th-time">${C.a5.today} ${m.time}</div><div class="bl">${m.b}</div>
+      ${mine.map(s=>`<div class="br">${esc(s.text)}</div>`).join("")}${mine.length?`<div class="th-dl">${C.a5.delivered}</div>`:""}
+      ${k==="scam"?`<div class="th-junk">${C.a5.unknown}<br><button onclick="a5Junk('${k}')">${C.a5.reportJunk}</button></div>`:""}</div>
+    <div class="th-in"><textarea id="smsIn" rows="1" placeholder="${C.a5.textPh}" aria-label="${C.a5.textPh}" oninput="a5Type(this)">${esc(P.drafts[k]||"")}</textarea>
+      <button class="th-send" id="smsSend" aria-label="${C.a5.send}" onclick="a5Send()" ${(P.drafts[k]||"").trim()?"":"disabled"}>${I.sendUp}</button></div></div>
+    <div class="samplebar"><span class="tag">${C.sample}</span></div>`,
+  f:`<button class="btn primary" onclick="a5Finish()">${C.a5.finish}</button>`,skip:C.skipPart};},{noBack:true});
+def("a5_done",5,"S02-05I · Activity done",()=>({c:doneBlock(C.a5.doneT,C.a5.doneB),
+  f:`<button class="btn primary" onclick="log('finish all activities');goAct(6)">${C.a5.nextEnd}</button>`}),{noBack:true});
+
+function a5Last(k){const P=S.a5.p2,mine=P.sent.filter(s=>s.to===k);return mine.length?esc(mine[mine.length-1].text):C.a5.sms[k].b;}
+function a5Pw(k){const P=S.a5.p2;if(P.pw===k)return;if(P.pw&&P.pwFirst===null)P.pwEdits++;log(P.pw?"change password choice":"choose password",`${P.pw?P.pw+" → ":""}${k}`);P.pw=k;render(false);}
+function a5PwSave(){const P=S.a5.p2;if(!P.pw)return nudge(C.a5.pickPw);
+  if(P.pwFirst===null){P.pwFirst=P.pw;log("SAVE password #1 (locked)",P.pw+(P.pw===KEY1.a5.pw?" ✓":""));
+    if(P.pw==="A")log("password from personal details","Part 2 Q1 = A (first name and year of birth)");
+    if(P.pw==="C")log("password from a word with numbers and symbols","Part 2 Q1 = C");}
+  S.hist=[];go("a5_tfa",false);}
+function a5Toggle(){const P=S.a5.p2;P.tfaOn=!P.tfaOn;P.tfaToggles++;log("two-step verification switch",P.tfaOn?"on":"off");render(false);}
+function a5Tfa(k){const P=S.a5.p2;if(P.tfa===k)return;if(P.tfa&&P.tfaFirst===null)P.tfaEdits++;log(P.tfa?"change answer":"select",`Part 2 Q2: ${P.tfa?P.tfa+" → ":""}${k}`);P.tfa=k;render(false);}
+function a5TfaNext(){const P=S.a5.p2;if(!P.tfaOn)return nudge(C.a5.turnOnFirst);if(!P.tfa)return nudge(C.pickFirst);
+  if(P.tfaFirst===null){P.tfaFirst=P.tfa;log("SUBMIT two-step question #1 (locked)",P.tfa+(P.tfa===KEY1.a5.tfa?" ✓":""));
+    if(P.tfa==="B")log("would give the code to clinic staff who ask","Part 2 Q2 = B");
+    if(P.tfa==="C")log("would give the code to a family member","Part 2 Q2 = C");}
+  S.hist=[];log("lock screen shown","two texts: code (10:41) and request for the code (10:42)");go("a5_lock",false);}
+function a5Open(k,from){const P=S.a5.p2;if(!P.opened.includes(k))P.opened.push(k);P.cur=k;
+  log("open text",`${k==="scam"?"request for the code (unknown number)":"code from KestrelBay"} · from ${from}`);go("a5_thread",false);}
+function a5ToList(){log("back to Messages list");go("a5_msgs",false);}
+function a5Type(el){const P=S.a5.p2;P.drafts[P.cur]=el.value;if(!P.typed){P.typed=true;log("typing a reply",P.cur==="scam"?"to unknown number":"to KestrelBay");}
+  const b=$("smsSend");if(b)b.disabled=!el.value.trim();save();}
+function a5Send(){const P=S.a5.p2,k=P.cur,t=(P.drafts[k]||"").trim();if(!t)return;
+  P.sent.push({to:k,text:t,t:ms()});P.drafts[k]="";
+  const code=/482\s*913/.test(t);
+  if(k==="scam"){P.repliedScam=true;if(code){P.sentCode=true;log("⚠ critical security error","sent the sign-in code to the unknown number");}else log("replied to the unknown number (no code)",`“${t}”`);}
+  else log("replied to KestrelBay",(code?"included the code · ":"")+`“${t}”`);
+  render(false);const ta=$("smsIn");if(ta)ta.focus({preventScroll:true});}
+function a5Junk(k){log("tap Report Junk",k);
+  openSheet(C.a5.junkT,`<p class="lead">${C.a5.junkB}</p><button class="btn primary" onclick="a5JunkYes('${k}')">${C.a5.junkYes}</button><button class="btn secondary" onclick="closeSheet();log('cancel Report Junk')">${C.a5.junkNo}</button>`);}
+function a5JunkYes(k){const P=S.a5.p2;if(!P.junked.includes(k))P.junked.push(k);log("deleted and reported as junk",k);closeSheet(true);go("a5_msgs",false);}
+function a5Outcome(){const P=S.a5.p2;
+  return P.sentCode?"Sent the code to the unknown number":P.repliedScam?"Replied to the unknown number, without the code":P.junked.includes("scam")?"Reported the request as junk":P.opened.includes("scam")?"Read the request and left it":"Did not open the request";}
+function a5Finish(){const P=S.a5.p2;P.finished=true;log("finish messages",a5Outcome());S.hist=[];go("a5_done",false);}
+function a5SkipPart(){
+  if(A5_P1.includes(S.screen)){S.a5.p1.skipped=true;log("skip Part 1","privacy: recorded as insufficient information");S.hist=[];go("a5_pw",false);}
+  else{S.a5.p2.skipped=true;log("skip Part 2","security: recorded as insufficient information");S.hist=[];go("a5_done",false);}}
+
+/* =====================================================================
+   11. END
+   ===================================================================== */
+def("end",0,"S03 · End of activities",()=>({c:`<div class="hero">${BONE}</div><h1 onclick="secretTap()">${C.end.t}</h1>
+  <p class="lead center">${C.end.b}</p>
+  <div class="fb info"><b>${I.info}${C.end.keyT}</b><ul class="keys">${C.end.key.map(x=>`<li>${x}</li>`).join("")}</ul></div>
+  <p class="lead center">${C.end.next}</p>${C.end.ph?`<p class="meta center">${C.end.ph}</p>`:""}`,
+  f:`<button class="btn primary" onclick="openAgain()">${C.end.again}</button>`}),{noBack:true});
+/* Back to the start: the finished run is archived inside S.prev (kept for export), then a fresh run begins.
+   Participant ID and text size carry over. Researcher "Restart for a new participant" still clears everything. */
+function openAgain(){log("open back to start");
+  openSheet(C.end.againQ,`<p class="lead">${C.end.againB}</p><button class="btn primary" onclick="startAgain()">${C.end.againYes}</button><button class="btn secondary" onclick="closeSheet();log('stay on end screen')">${C.end.stay}</button>`);}
+function startAgain(){log("back to start","run "+((S.prev||[]).length+1)+" archived");
+  const old=Object.assign({},S);delete old.prev;old.endedAt=new Date().toISOString();
+  const n=fresh();n.pid=S.pid;n.scale=S.scale;n.tester=!!S.tester;n.prev=(S.prev||[]).concat([old]);
+  leave();S=n;applyScale();render(true);log("session start","run "+(S.prev.length+1));}
+
+/* =====================================================================
+   12. RESEARCHER VIEW (hidden). Open: tap the "Activity x of 5" line or the
+       big title 5 times quickly · or add ?researcher / #researcher to the address · or Shift+R
+   ===================================================================== */
+let taps=[];
+function secretTap(){const t=Date.now();taps=taps.filter(x=>t-x<2500);taps.push(t);if(taps.length>=5){taps=[];openRV();}}
+function openRV(){RV_OPEN=true;$("rv").hidden=false;renderRV();log("researcher view opened");}
+function closeRV(){RV_OPEN=false;$("rv").hidden=true;}
+const ok=s=>`<span class="okc">${s}</span>`,bad=s=>`<span class="crit">${s}</span>`,mut=s=>`<span class="mut">${s}</span>`,yn=b=>b?"Yes":"No";
+const dur=a=>{const t=S.time[a];if(!t||t.start==null)return "—";return fmt((t.end!=null?t.end:ms())-t.start)+(t.end==null?" (in progress)":"");};
+const common=a=>[["Time in activity",dur(a)],["Back taps",S.backs[a]||0],["Tapped Next before answering",S.nudges[a]||0],["Skipped whole activity",S.skipped[a]?bad("Yes"):"No"]];
+function pGen(){return [["Participant ID",esc(S.pid)||mut("not set")],["Session started",new Date(S.startedAt).toLocaleString("en-AU")],["Run on this phone",((S.prev||[]).length+1)+(S.prev&&S.prev.length?mut(" (earlier runs are in the downloads; tables below show this run only)"):"")],["Current screen",SCR[S.screen].label],
+  ["Text size now",C.sizes.find(s=>s[0]===S.scale)?.[1]||S.scale],["Text size changes / Listen taps "+mut("(not a difficulty signal)"),`${S.assist.size}× / ${S.assist.read}×`],
+  ["Technical issues",S.tech.length?bad(S.tech.map(esc).join("<br>")):"None"]];}
+function p1(){const A=S.a1,f=A.first,m=k=>f?(f[k]===KEY1.a1[k]?ok("Correct"):bad(`Incorrect (${f[k]})`)):"—";
+  return [["Is the result normal? (Q1, first try)",m("q1")],["Change since last scan (Q2, first try)",m("q2")],["Info boundary (Q3, first try)",m("q3")],
+  ["Thinks result is normal (Q1 = A)",f?(f.q1==="A"?bad("Yes"):"No"):"—"],
+  ["Read the % as a big drop (Q2 = A)",f?(f.q2==="A"?bad("Yes"):"No"):"—"],
+  ["Report opened from questions",A.reportViews+"×"],["Report re-read after finishing",A.reviewViews+"×"],
+  ["Answers changed before first submit",A.edits],["Changed answers after finishing",A.retries],...common(1)];}
+function p2(){const n=S.a2.nav,s=S.a2.sr,nonT=s.opened.filter(k=>!ART_TARGET[k]);
+  const via=[s.typed&&"Typed",s.voice&&"Voice → transcript shown"].filter(Boolean).join(" + ")||"—";
+  return [["§","A · Navigation"],
+  ["First section tapped",n.first?(n.first==="a2_followup"?ok("Follow-up ✓"):SEC[n.first]):"—"],
+  ["Wrong pages entered",n.wrong.length?n.wrong.map(w=>SEC[w]).join(", "):"None"],
+  ["Opened & viewed 12 June 2030",yn(n.openedTarget)],["Opened 20 July 2030",yn(n.openedOther)],
+  ["Returned to activity menu",n.returned?ok("Yes")+" "+n.returnVia:(n.skipped?"Skipped (info insufficient)":"No")],
+  ["Path from target back to menu "+mut("(fastest is 2 steps)"),n.openedTarget&&n.pathAfter.length?["12 June 2030 details"].concat(n.pathAfter.map(id=>A2NAME[id]||id)).join(" → "):"—"],
+  ["Returned to menu before finding target",n.emptyReturns+"×"],
+  ["§","B · Search"],
+  ["Searches",s.queries.length?s.queries.map(q=>`“${esc(q.q)}” ${mut(q.via)}${q.rel?" ✓":""}`).join("<br>"):"—"],
+  ["First search relevant",s.firstRel===null?"—":yn(s.firstRel)],["Search words changed",s.edits],["Input method",via],
+  ["Non-target results opened",nonT.length?nonT.map(k=>C.a2.art[k].t).join(", "):"None"],
+  ["Went Back to results from a non-target article",s.backFromWrong+"×"],
+  ["Left the target article without choosing it",s.leftTarget+"×"],
+  ["First ‘This is the one’ on",s.firstDone?(ART_TARGET[s.firstDone]?ok("Target ✓"):bad(C.a2.art[s.firstDone].t)):"—"],
+  ["Found target article",s.found?ok("Yes"):(s.skipped?"Skipped (info insufficient)":(s.wrongFinish?"No (finished on non-target)":"No"))],
+  ["§","Other"],["Task instruction re-opened "+mut("(not help)"),S.a2.taskViews+"×"],...common(2)];}
+function p3(){const A=S.a3,f=A.first,m=k=>f?(f[k]===KEY1.a3[k]?ok("Correct"):bad(`Incorrect (${f[k]})`)):"—";
+  const full=f?((A.srcBeforeSubmit&&f.q1==="A"&&f.q2==="A"&&f.q3==="B")?ok("Yes"):"No"):"—";
+  return [["§","Checking the source (unprompted)"],
+  ["Advertiser details viewed before first submit",f?yn(A.srcBeforeSubmit):(A.srcViews?"Yes (so far)":"Not yet")],["Advertiser details viewed before answering Q1",yn(A.srcBeforeQ1)],
+  ["Opened the ⋯ menu",(A.menuOpens||0)+"×"],["Opened ‘Why am I seeing this ad?’",(A.whyViews||0)+"×"],["Tapped the page name (Page transparency)",(A.pageViews||0)+"×"],
+  ["Tapped ‘Hide ad’ / ‘Report ad’",`${A.hideTaps||0}× / ${A.reportTaps||0}×`],["Tapped ‘Shop now’ in the ad",(A.shopTaps||0)+"×"],
+  ["§","Questions (first try locked)"],
+  ["Q1 What is it? (commercial intent)",m("q1")+(f&&f.q1==="B"?"<br>"+mut("took it for a personal story"):"")],
+  ["Q2 How to check (checking elsewhere)",m("q2")+(f&&f.q2==="B"?"<br>"+mut("seller's own website"):f&&f.q2==="C"?"<br>"+mut("likes and shares"):"")],
+  ["Q3 What should Helen do? (applies to a person)",m("q3")+(f&&f.q3==="A"?"<br>"+mut("adds it without asking, not critical"):"")],
+  ["Critical safety error",f?(f.q3==="C"?bad("Yes, product in place of medicine"):"No"):"—"],
+  ["Full completion (advertiser details + 3 correct)",full],
+  ["§","Other"],["Post re-opened from questions",(A.postViews||0)+"×"],["Answers changed before submit",A.edits],
+  ["Changed answers after finishing",A.retries],...common(3)];}
+function p4(){const A=S.a4,f=A.q1first;
+  const step=f?(f==="A"?ok("Correct (A)"):f==="B"?bad("B, pushes heavy box alone"):"C, no action (‘take more care’)"):"—";
+  const words=A.confirmed?A.confirmed.split(/\s+/).filter(Boolean).length:0;
+  const via=[A.typed&&"Typed",A.voice&&"Voice → transcript shown"].filter(Boolean).join(" + ")||"—";
+  return [["§","Part 1 · Action (first try locked)"],["Step chosen",step],["Critical safety error",f?(f==="B"?bad("Yes"):"No"):"—"],
+  ["Changed before adding / later re-adds",`${A.edits} / ${Math.max(0,A.adds-1)}`],
+  ["§","Part 2 · Own question"],
+  ["Produced own question",A.confirmed?ok("Yes, confirmed"):A.skippedQ?"Skipped":A.text.trim()?"Drafting…":"—"],
+  ["First confirmed text",A.confirmed?`<span style="font-weight:500">“${esc(A.confirmed)}”</span>`:"—"],["Length",A.confirmed?words+" words":"—"],
+  ["Input method",via],["Edit from review page",A.editsFromReview],["Delete actions while typing",A.deletions],
+  ["§","Other"],["Advice re-opened / source viewed",`${A.adviceViews}× / ${A.srcViews}×`],...common(4)];}
+function p5(){const P=S.a5.p1,Q=S.a5.p2,f=P.first,K=KEY1.a5;
+  const m=(v,key)=>v?(v===key?ok("Correct"):bad(`Incorrect (${v})`)):"—";
+  return [["§","Part 1 · Protecting privacy (public group)"],
+  ["About (Public / Visible) viewed before answering Q1",yn(P.infoBeforeQ1)],["About viewed in total",P.infoViews+"×"],["Tapped ‘Join group’",P.joinTaps+"×"],
+  ["Q1 Can someone who hasn't joined see Bev's comment? (first try)",m(f&&f.q1,K.p1.q1)+(f&&f.q1==="B"?"<br>"+mut("thinks they must ask to join first"):f&&f.q1==="C"?"<br>"+mut("thinks members only"):"")],
+  ["Q2 Which comment protects privacy? (first try)",m(f&&f.q2,K.p1.q2)+(f&&f.q2==="A"?"<br>"+mut("missed own identifying details"):f&&f.q2==="B"?"<br>"+mut("missed someone else's private details"):"")],
+  ["Post re-opened from questions",P.threadViews+"×"],["Answers changed before submit",P.edits],["Part 1 skipped",P.skipped?bad("Yes (info insufficient)"):"No"],
+  ["§","Part 2 · Using security measures (iPhone flow)"],
+  ["Q1 New password (first save)",m(Q.pwFirst,K.pw)+(Q.pwFirst==="A"?"<br>"+mut("personal details"):Q.pwFirst==="C"?"<br>"+mut("word with numbers and symbols"):"")],
+  ["Two-step verification turned on",Q.tfaOn?ok("Yes"):"No"],["Switch taps",Q.tfaToggles],
+  ["Q2 Who should you give the code to? (first try)",m(Q.tfaFirst,K.tfa)+(Q.tfaFirst==="B"?"<br>"+mut("clinic staff who ask"):Q.tfaFirst==="C"?"<br>"+mut("a family member"):"")],
+  ["Texts opened",Q.opened.length?Q.opened.map(k=>k==="scam"?"request for the code":"the code").join(", "):"None"],
+  ["Replies sent",Q.sent.length?Q.sent.map(s=>`${s.to==="scam"?"to unknown number":"to KestrelBay"}: “${esc(s.text)}”`).join("<br>"):"None"],
+  ["Critical security error (sent the code)",Q.sentCode?bad("Yes"):(Q.finished?"No":"—")],
+  ["Reported the request as junk",yn(Q.junked.includes("scam"))],
+  ["What they did with the request",Q.finished?(Q.sentCode?bad(a5Outcome()):a5Outcome()):"—"],
+  ["Part 2 skipped",Q.skipped?bad("Yes (info insufficient)"):"No"],
+  ["§","Other"],...common(5)];}
+const table=rows=>`<table>${rows.map(r=>r[0]==="§"?`<tr><td colspan="2" style="font-weight:800;color:#66564D;padding-top:12px">${r[1]}</td></tr>`:`<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join("")}</table>`;
+function coding(){const c=S.a4.code,o=(v,l,cur)=>`<option value="${v}"${cur===v?" selected":""}>${l}</option>`;
+  return `<div class="rv-box"><b>Manual coding of the Activity 4 question</b>
+  <label>Self-generated content<select onchange="S.a4.code.gen=this.value;save()">${o("","—",c.gen)}${o("own","Yes, own words",c.gen)}${o("none","No content",c.gen)}</select></label>
+  <label>Relevance<select onchange="S.a4.code.rel=this.value;save()">${o("","—",c.rel)}${o("rel","Related to falls / bone health / the text",c.rel)}${o("loose","Loosely related",c.rel)}${o("no","Not related",c.rel)}</select></label>
+  <label>Clarity<select onchange="S.a4.code.clr=this.value;save()">${o("","—",c.clr)}${o("clear","Clear question",c.clr)}${o("topic","Topic only (e.g. “falls”)",c.clr)}${o("unclear","Can't tell what is asked",c.clr)}</select></label>
+  <span class="rv-small" style="margin:0">Spelling, grammar and typing speed are not scored.</span></div>`;}
+function renderRV(){
+  $("rv").innerHTML=`<div class="rv-in">
+  <div class="rv-top"><h1>Researcher view</h1><button onclick="closeRV()">Close</button></div>
+  <p class="rv-small">Not shown to participants. Data is saved on this phone and survives a reload. First submissions are locked once recorded. Text size, Listen and reading time are not treated as signs of difficulty.</p>
+  <div class="rv-box"><label>Participant ID<input id="pid" value="${esc(S.pid)}" autocomplete="off" oninput="S.pid=this.value;save()"></label></div>
+  <div class="rv-actions"><button onclick="exportJSON()">Download all data (JSON)</button><button onclick="exportCSV()">Download event log (CSV)</button>
+    <button onclick="copyJSON(this)">Copy all data</button><button class="danger" onclick="restartAll(this)">Restart for a new participant</button></div>
+  <p class="rv-small">If a download doesn't start (some viewers block downloads), use “Copy all data” and paste it into an email or note.</p>
+  <div class="rv-box"><label>Jump to a screen (for checking the design)
+    <select onchange="if(this.value)jumpTo(this.value)"><option value="">Choose a screen…</option>${jumpOptions()}</select></label>
+    <span class="rv-small" style="margin:0">Jumping fills in sample answers where a screen needs them, and is written to the log. Tap “Restart for a new participant” before a real session.</span>
+    <label style="display:flex;grid-template-columns:none;align-items:center;gap:8px;color:#2B211C"><input type="checkbox" style="width:20px;height:20px;padding:0" ${S.tester?"checked":""} onchange="S.tester=this.checked;save();log('tester shortcuts',this.checked?'on':'off');render(false)">Show tester shortcuts at the top of the app (Start · 1–5 · End)</label>
+    <span class="rv-small" style="margin:0">For your own testing only. Tapping a number goes to the start of that activity and clears its answers. “Restart for a new participant” switches this off.</span></div>
+  <h2>General</h2>${table(pGen())}
+  <h2>Activity 1 · Understand a report</h2>${table(p1())}
+  <h2>Activity 2 · Find an appointment & search</h2>${table(p2())}
+  <h2>Activity 3 · Look at a health post</h2>${table(p3())}
+  <h2>Activity 4 · Advice into practice & own question</h2>${table(p4())}${coding()}
+  <h2>Activity 5 · Privacy (public group) & security (password, two-step code, texts)</h2>${table(p5())}
+  <h2>Event log (newest first)</h2>
+  <div class="rv-log">${S.log.length?S.log.slice().reverse().map(e=>`<div><span class="t">${fmt(e.t)} · A${e.act}</span> ${esc(e.type)}${e.detail?` · ${esc(e.detail)}`:""}</div>`).join(""):"<span class='t'>No events yet.</span>"}</div></div>`;
+}
+/* ---------- jump straight to any screen (design checking only) ---------- */
+const ACT_NAMES=["Start","Activity 1 · Report","Activity 2 · Appointment & search","Activity 3 · Health post","Activity 4 · Advice & question","Activity 5 · Privacy & security"];
+function jumpOptions(){return ACT_NAMES.map((n,a)=>`<optgroup label="${n}">${Object.values(SCR).filter(s=>s.act===a&&!(a===0&&s.id==="end")).map(s=>`<option value="${s.id}">${esc(s.label)}</option>`).join("")}${a===5?`<option value="end">${esc(SCR.end.label)}</option>`:""}</optgroup>`).join("")
+  +`<optgroup label="Activity 2 · Part 2"><option value="a2_menu@B">S02-02 · Part 2 start (search)</option></optgroup>`;}
+function jumpTo(v){
+  let [id,mode]=v.split("@");
+  if(id==="a1_fb"&&!S.a1.lastResult){S.a1.ans={q1:"A",q2:"A",q3:"C"};S.a1.lastAns={...S.a1.ans};S.a1.lastResult={q1:true,q2:true,q3:true};}
+  if(id==="a3_fb"&&!S.a3.lastResult){S.a3.ans={q1:"A",q2:"A",q3:"B"};S.a3.lastAns={...S.a3.ans};S.a3.lastResult={q1:true,q2:true,q3:true};}
+  if(id.startsWith("a2_")){
+    if(mode==="B"||["a2_search","a2_results","a2_done"].includes(id))S.a2.part="B";
+    else if(["a2_menu","a2_reports","a2_followup","a2_jun","a2_jul","a2_info"].includes(id)||id.startsWith("a2_sec_"))S.a2.part="A";}
+  if(S.a2.part==="B"&&!S.a2.nav.returned&&!S.a2.nav.skipped)S.a2.nav.returned=true;
+  if(id==="a2_results"&&!S.a2.sr.queries.length){S.a2.sr.queries.push({q:"walkway",rel:true,via:"typed"});S.a2.sr.results=matchSearch("walkway");}
+  if(id==="a4_review"&&!S.a4.text.trim())S.a4.text="How can I keep my hallway safe?";
+  if(id.startsWith("a5_"))A5CTX="page";
+  if(id.startsWith("a3_"))A3CTX="page";
+  closeRV();leave();S.hist=[];S.screen=id;log("researcher jump",SCR[id].label);render(true);}
+
+const fileBase=()=>`bonehealth_${(S.pid||"noID").replace(/[^\w-]/g,"_")}_${S.startedAt.slice(0,10)}`;
+function download(name,text,type){try{const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},800);}catch(e){alert("Download isn't available here. Use “Copy all data” instead.");}}
+function exportJSON(){download(fileBase()+".json",JSON.stringify(S,null,2),"application/json");}
+function exportCSV(){const q=v=>`"${String(v).replace(/"/g,'""')}"`;
+  const runs=(S.prev||[]).concat([S]);
+  const rows=[["participant","run","time_s","activity","screen","event","detail"]].concat(...runs.map((r,i)=>r.log.map(e=>[S.pid,i+1,(e.t/1000).toFixed(1),e.act,(SCR[e.scr]||{}).label||e.scr,e.type,e.detail])));
+  download(fileBase()+"_log.csv","﻿"+rows.map(r=>r.map(q).join(",")).join("\n"),"text/csv");}
+function copyJSON(btn){const t=JSON.stringify(S,null,2);
+  (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>{btn.textContent="Copied ✓";},()=>{
+    const ta=document.createElement("textarea");ta.value=t;document.body.appendChild(ta);ta.select();try{document.execCommand("copy");btn.textContent="Copied ✓";}catch(e){}ta.remove();});}
+let armRestart=0;
+function restartAll(btn){
+  if(Date.now()-armRestart>4000){armRestart=Date.now();btn.textContent="Tap again to clear this participant's data";return;}
+  armRestart=0;store.del();stopSpeech();S=fresh();applyScale();closeRV();closeSheet(true);render(true);log("session start");}
+
+/* =====================================================================
+   13. BOOT
+   ===================================================================== */
+(function boot(){
+  const saved=store.get();
+  S=(saved&&saved.v===2&&SCR[saved.screen])?saved:fresh();
+  /* v6 fields, so a session saved by v5 on this phone still loads */
+  try{const n=S.a2.nav,s=S.a2.sr;if(!Array.isArray(n.pathAfter))n.pathAfter=[];if(s.backFromWrong==null)s.backFromWrong=0;if(s.leftTarget==null)s.leftTarget=0;if(S.a3.shopTaps==null)S.a3.shopTaps=0;}catch(e){}
+  /* v8: Activity 5 now stores a list of recipients; a session saved by v7 gets a clean Activity 5 */
+  /* v9: the quick check changed (who can see it), so an Activity 5 saved by v8 (it has a "scope") is also cleared */
+  /* v10/v11: Activity 5 was rebuilt, so an Activity 5 saved by an earlier version is cleared */
+  try{if(!S.a5||!S.a5.p2||!("tfaOn" in S.a5.p2)){S.a5=fresh().a5;if(String(S.screen).startsWith("a5_"))S.screen="a5_forum";}if(S.tester==null)S.tester=false;}catch(e){}
+  applyScale();render(true);
+  $("scrim").onclick=()=>closeSheet();
+  document.addEventListener("keydown",e=>{
+    if(e.key==="Escape"){if(RV_OPEN)closeRV();else closeSheet();}
+    if(e.key==="R"&&e.shiftKey&&!/INPUT|TEXTAREA/.test(document.activeElement.tagName))RV_OPEN?closeRV():openRV();});
+  try{if(new URLSearchParams(location.search).has("researcher")||location.hash==="#researcher"){const b=document.createElement("button");b.id="rvfab";b.textContent="Researcher";b.onclick=openRV;document.body.appendChild(b);}}catch(e){}
+  if("speechSynthesis" in window)try{speechSynthesis.getVoices();speechSynthesis.onvoiceschanged=()=>{};}catch(e){}
+  if(!saved)log("session start");
+})();
+</script>
+</body>
+</html>
